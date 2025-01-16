@@ -17,4 +17,4 @@ crate-type = ["cdylib"]
 
 [package.metadata.release]
 tag = true
-push = true
+push = false
