@@ -14,3 +14,9 @@ uuid = { version = "1.12.0", features = ["v4"] }
 
 [lib]
 crate-type = ["cdylib"]
+
+[package.metadata.release]
+changelog = true
+tag = true
+push = true
+build-command = "cargo build --release"
