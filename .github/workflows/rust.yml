@@ -1,20 +1,30 @@
-name: Rust
+name: Automated Rust Release
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
-env:
-  CARGO_TERM_COLOR: always
+    branches:
+      - main # Trigger on changes to the main branch
+  workflow_dispatch: # Allow manual triggering of the workflow
 
 jobs:
-  build:
-
-    runs-on: windows-latest
+  release:
+    name: Cargo Release
+    runs-on: windows-latest # Use Windows for DLL builds
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set Up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+
+    - name: Install Cargo Release
+      run: cargo install cargo-release
+
+    - name: Run Cargo Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Required for tagging and pushing
+      run: cargo release --execute
