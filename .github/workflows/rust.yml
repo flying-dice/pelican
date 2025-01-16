@@ -28,3 +28,16 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Required for tagging and pushing
       run: cargo release --execute
+
+    - name: Build DLL
+      run: cargo build --release
+
+    - name: Create GitHub Release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: target/release/*.dll
+        tag: ${{ github.ref_name }} # Uses the tag created by `cargo release`
+        name: Release ${{ github.ref_name }}
+        body: |
+          This release was automatically created using cargo-release and GitHub Actions.
+        token: ${{ secrets.GITHUB_TOKEN }}
