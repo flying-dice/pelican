@@ -21,7 +21,7 @@ jobs:
       - name: Set Up Lua
         uses: leafo/gh-actions-lua@v10  # Set up Lua
         with:
-          luaVersion: "5.1"
+          luaVersion: "5.1.5"
 
       - name: Set Up Rust
         uses: actions-rs/toolchain@v1  # Set up the Rust toolchain
