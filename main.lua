@@ -7,31 +7,15 @@ local jsonrpc = require("lua_json_rpc")
 local stop = jsonrpc.start_server({
     host = "0.0.0.0",
     port = 1359,
-    workers = 2
+    workers = 2,
+    api_key = "super-secret-k3y"
 })
 
 io.write("JSON-RPC server started on port 1359\n")
 io.flush()
 
-function dump(o)
-    if type(o) == 'table' then
-        local s = '{ '
-        for k, v in pairs(o) do
-            if type(k) ~= 'number' then
-                k = '"' .. k .. '"'
-            end
-            s = s .. '[' .. k .. '] = ' .. dump(v) .. ','
-        end
-        return s .. '} '
-    else
-        return tostring(o)
-    end
-end
-
 function on_rpc(request)
     io.write("Routing Request: " .. request.method .. "\n")
-
-    io.write(dump(request) .. "\n")
 
     local response = {
         id = request.id,

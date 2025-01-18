@@ -1,7 +1,7 @@
 # JSON-RPC Server with Lua Integration
 
-This project provides a fully functional JSON-RPC server implemented in Rust with integration to Lua. 
-It supports both HTTP and WebSocket endpoints for receiving and responding to JSON-RPC requests. 
+This project provides a fully functional JSON-RPC server implemented in Rust with integration to Lua.
+It supports both HTTP and WebSocket endpoints for receiving and responding to JSON-RPC requests.
 
 The RPC Router and Request Handler is extended through Lua scripts, making it highly customizable and embeddable.
 
@@ -10,43 +10,55 @@ The RPC Router and Request Handler is extended through Lua scripts, making it hi
 - **JSON-RPC Support**: Implements JSON-RPC 2.0 protocol.
 - **Dual Endpoint**: Supports both HTTP and WebSocket endpoints for RPC communication.
 - **Lua Integration**: Allows Lua scripts to dynamically handle and process RPC requests.
-- **Asynchronous Processing**: Uses Actix and Tokio for handling asynchronous requests.
-- **Session Management**: Manages WebSocket sessions and broadcasts responses to all active sessions.
+- **Asynchronous Processing**: Uses Actix accepting requests and conversion to and from JSON
 
 ## How It Works
 
 ### 1. Lua Integration
 
-The server exposes functions to Lua, allowing Lua scripts to start the server, process incoming RPC requests, and encode/decode JSON data. Here's an overview of the Lua functions provided:
+The server exposes functions to Lua, allowing Lua scripts to start the server, process incoming RPC requests, and
+encode/decode JSON data. Here's an overview of the Lua functions provided:
 
-- `start_server(port: number)`: Starts the server on the specified port.
+- `start_server(config: AppConfig)`: Starts the server on the specified port
 - `process_rpc(callback: function)`: Processes incoming RPC requests by calling the specified Lua callback function.
 - `encode(value: table)`: Encodes a Lua table into a JSON string.
 - `decode(json: string)`: Decodes a JSON string into a Lua table.
+
+#### App Config
+
+The `AppConfig` struct is used to configure the server. It includes the following fields:
+
+- `host`: The host address to bind the server to.
+- `port`: The port number to listen on.
+- `workers`: The number of worker threads to use for processing requests.
+- `api_key`: The API key required to access the server. (Optional)
+
+The API key needs to be included in the request headers as `x-api-key` to authenticate the request.
 
 ### 2. Example Lua Usage
 
 Here’s a sample Lua script to start the server and handle incoming RPC requests:
 
 ```lua
-package.path = package.path .. ";.C:\\PATH\\TO\\DLL\\?.lua"
-package.cpath = package.cpath .. ";C:\\PATH\\TO\\DLL\\?.dll"
-local json_rpc = require("json_rpc_server")
+-- MAKE SURE YOUR WORKING DIRECTORY IS THE ROOT OF THE PROJECT NOT `src` OR ANY OTHER FOLDER
+package.path = package.path .. ";.\\target\\debug\\?.lua"
+package.cpath = package.cpath .. ";.\\target\\debug\\?.dll"
 
--- Start the server on port 1234
-json_rpc.start_server(1234)
+local jsonrpc = require("lua_json_rpc")
 
--- Define the RPC handler
--- Payloads are JSON-RPC requests in string format
-function on_rpc(payload)
-    local request = json_rpc.decode(payload) -- {"jsonrpc": "2.0", "method": "subtract", "params": [42, 23], "id": "1"}
+local stop = jsonrpc.start_server({
+    host = "0.0.0.0",
+    port = 1359,
+    workers = 2,
+    api_key = "super-secret-k3y"
+})
 
-    print("Routing Request: " .. request.method)
-    
-    if (request.id == nil) then -- Used for handlers that don't require a response
-        return
-    end
-    
+io.write("JSON-RPC server started on port 1359\n")
+io.flush()
+
+function on_rpc(request)
+    io.write("Routing Request: " .. request.method .. "\n")
+
     local response = {
         id = request.id,
         jsonrpc = "2.0",
@@ -58,34 +70,23 @@ function on_rpc(payload)
 
     io.flush()
 
-    -- Return the response as a JSON string
-    return json_rpc.encode(response) -- {"id":"1","jsonrpc":"2.0","result":19}
+    return response
 end
 
--- Continuously process incoming RPC requests
-while true do
-    json_rpc.process_rpc(on_rpc)
+local started = os.clock()
+
+---- Run for 10 seconds
+while os.clock() - started < 30 do
+    jsonrpc.process_rpc(on_rpc)
 end
+
+print("Shutting down JSON-RPC server")
+stop()
+
+os.execute("echo Press any key to continue... && pause > nul")
 ```
 
 ## Usage
-
-Download Rust: https://www.rust-lang.org/
-
-### Running the Server
-
-1. **Build the Rust Library**:  
-   Compile the Rust code to generate a shared library (`.dll`, `.so`, or `.dylib`) for Lua to load.
-
-```shell 
-cargo build --release
-```
-
-2. **Configure Lua Script**:  
-   Update the `package.path` and `package.cpath` in your Lua script to point to the generated shared library.
-
-3. **Run the Lua Script**:  
-   Use a Lua interpreter to run your Lua script and start the server.
 
 ### Sending Requests
 
@@ -109,10 +110,13 @@ curl -X POST http://localhost:1234/rpc \
 
 ```json
 {
-    "jsonrpc": "2.0",
-    "method": "subtract",
-    "params": [42, 23],
-    "id": "1"
+  "jsonrpc": "2.0",
+  "method": "subtract",
+  "params": [
+    42,
+    23
+  ],
+  "id": "1"
 }
 ```
 
@@ -120,9 +124,9 @@ curl -X POST http://localhost:1234/rpc \
 
 ```json
 {
-    "jsonrpc": "2.0",
-    "id": "1",
-    "result": 19
+  "jsonrpc": "2.0",
+  "id": "1",
+  "result": 19
 }
 ```
 
@@ -132,26 +136,26 @@ curl -X POST http://localhost:1234/rpc \
 - If the request is valid but no response is generated, a `202 Accepted` with OK is returned.
 - If the request is a websocket request but no response is required (e.g., notifications), no response is sent.
 
-## Building and Running
+## Building
 
-1. **Clone the Repository**:
+The project can be built using Cargo. Run the following command in the project root directory:
 
-   ```bash
-   git clone <repository-url>
-   cd json-rpc-server
-   ```
+```bash
+cargo build
+```
 
-2. **Build the Rust Project**:
+This will build the project in debug mode. To build in release mode, run:
 
-   ```bash
-   cargo build --release
-   ```
+```bash
+cargo build --release
+```
 
-3. **Run the Lua Script**:
+By default the build will produce a DLL compatible with the lua runtime installed on the host.
 
-   ```bash
-   lua main.lua
-   ```
+The build is set up for DCS world currently as such the lua5.1 directory is provided to ensure compatibility with DCS
+world.
+
+Run `build-dcs.bat` to build the project for DCS world creating a compatible DLL.
 
 ## Contributing
 
@@ -163,4 +167,5 @@ This project is licensed under the MIT License. See the [LICENSE.md](LICENSE.md)
 
 ## Acknowledgements
 
-Special thanks to the contributors of Actix, mlua, and the Rust and Lua communities for their excellent libraries and support.
+Special thanks to the contributors of Actix, mlua, and the Rust and Lua communities for their excellent libraries and
+support.
