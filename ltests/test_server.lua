@@ -7,7 +7,7 @@ local describe, it, expect = lester.describe, lester.it, lester.expect
 
 describe("jsonrpc.server", function()
     it("should create server and provide close callback", function()
-        local res, err = jsonrpc.start_server({ port = 3000, workers = 2 })
+        local res, err = jsonrpc.start_server({ host = "0.0.0.0", port = 3000, workers = 2 })
         expect.equal(type(res), "function")
 
         res()

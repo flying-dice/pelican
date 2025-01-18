@@ -3,11 +3,11 @@ package.path = package.path .. ";.\\target\\debug\\?.lua"
 package.cpath = package.cpath .. ";.\\target\\debug\\?.dll"
 
 local jsonrpc = require("lua_json_rpc")
-jsonrpc.configure_logger("log4rs.yaml")
 
 local stop = jsonrpc.start_server({
+    host = "0.0.0.0",
     port = 1359,
-    workers = 2,
+    workers = 2
 })
 
 io.write("JSON-RPC server started on port 1359\n")
@@ -31,7 +31,7 @@ end
 function on_rpc(request)
     io.write("Routing Request: " .. request.method .. "\n")
 
-    io.write(dump(request))
+    io.write(dump(request) .. "\n")
 
     local response = {
         id = request.id,

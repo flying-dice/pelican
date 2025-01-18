@@ -1,11 +1,9 @@
 mod app;
 mod json_rpc;
-mod logger;
 mod lua_json;
 
 use crate::app::{create_app, AppConfig, AppData};
 use crate::json_rpc::process_rpc;
-use crate::logger::configure_log4rs;
 use crate::lua_json::{decode, encode};
 use actix_web::dev::ServerHandle;
 use actix_web::web::Data;
@@ -23,6 +21,7 @@ pub fn lua_json_rpc(lua: &Lua) -> Result<LuaTable> {
     let _data: Data<Mutex<AppData>> = Data::new(Mutex::new(AppData {
         rpc_queue: VecDeque::new(),
         rpc_response_listeners: HashMap::new(),
+        api_key: None,
     }));
 
     let data = _data.clone();
@@ -34,6 +33,15 @@ pub fn lua_json_rpc(lua: &Lua) -> Result<LuaTable> {
                     error!("Error parsing server config: {:?}", e);
                     mlua::Error::RuntimeError(format!("Error parsing server config: {:?}", e))
                 })?;
+
+            match data.lock() {
+                Ok(mut data_guard) => {
+                    data_guard.api_key = config.api_key.clone();
+                }
+                Err(e) => {
+                    warn!("Error acquiring data lock, failed to set API Key: {:?}", e);
+                }
+            }
 
             info!("Setting up server with config {:?}", config);
             let handle: ServerHandle = create_app(data.clone(), &config).map_err(|e| {
@@ -91,19 +99,6 @@ pub fn lua_json_rpc(lua: &Lua) -> Result<LuaTable> {
                 None => Ok(()),
             }
         })?,
-    )?;
-
-    exports.set(
-        "configure_logger",
-        lua.create_function(
-            |lua: &Lua, file: LuaString| match configure_log4rs(lua, &file) {
-                Ok(value) => Ok(value.into_lua_multi(lua)?),
-                Err(err) => {
-                    Ok((Nil, format!("Failed to configure logger: {:?}", err))
-                        .into_lua_multi(lua)?)
-                }
-            },
-        )?,
     )?;
 
     exports.set(

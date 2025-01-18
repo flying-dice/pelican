@@ -1,8 +1,8 @@
 use crate::json_rpc::{push_rpc_request, JsonRpcRequest, JsonRpcResponse, RpcError};
 use actix_web::dev::ServerHandle;
-use actix_web::error::{ErrorBadRequest, ErrorInternalServerError};
+use actix_web::error::{ErrorBadRequest, ErrorInternalServerError, ErrorUnauthorized};
 use actix_web::web::{Data, Payload};
-use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
+use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_ws::{Message, Session};
 use log::{error, info};
 use serde::Deserialize;
@@ -15,12 +15,36 @@ use tokio::sync::oneshot::Receiver;
 pub struct AppData {
     pub rpc_queue: VecDeque<JsonRpcRequest>,
     pub rpc_response_listeners: HashMap<String, oneshot::Sender<JsonRpcResponse>>,
+    pub api_key: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct AppConfig {
+    pub host: String,
     pub port: u16,
     pub workers: usize,
+    pub api_key: Option<String>,
+}
+
+fn validate_api_key(req: &HttpRequest, data: &Data<Mutex<AppData>>) -> Result<(), Error> {
+    let expected_api_key = &data
+        .lock()
+        .map_err(|e| ErrorInternalServerError(e.to_string()))?
+        .api_key;
+
+    match expected_api_key {
+        Some(key) => match req.headers().get("x-api-key") {
+            Some(api_key) => {
+                if api_key == key {
+                    Ok(())
+                } else {
+                    Err(ErrorUnauthorized("Invalid API key"))
+                }
+            }
+            None => Err(ErrorUnauthorized("Missing API key")),
+        },
+        None => Ok(()),
+    }
 }
 
 async fn notify_session(
@@ -53,6 +77,8 @@ async fn ws_handler(
     body: Payload,
     data: Data<Mutex<AppData>>,
 ) -> actix_web::Result<HttpResponse> {
+    validate_api_key(&req, &data)?;
+
     let (response, mut session, mut msg_stream) = actix_ws::handle(&req, body)?;
 
     actix_web::rt::spawn({
@@ -104,7 +130,13 @@ async fn ws_handler(
     Ok(response)
 }
 
-async fn rpc_handler(data: Data<Mutex<AppData>>, body: String) -> Result<HttpResponse, Error> {
+async fn rpc_handler(
+    req: HttpRequest,
+    data: Data<Mutex<AppData>>,
+    body: String,
+) -> Result<HttpResponse, Error> {
+    validate_api_key(&req, &data)?;
+
     let mut data_guard = data
         .lock()
         .map_err(|e| ErrorInternalServerError(format!("Failed to acquire data lock: {}", e)))?;
@@ -130,11 +162,12 @@ pub fn create_app(data: Data<Mutex<AppData>>, config: &AppConfig) -> Result<Serv
     let server = HttpServer::new(move || {
         App::new()
             .app_data(Data::clone(&data))
+            .wrap(middleware::Logger::default())
             .route("/rpc", web::post().to(rpc_handler))
             .route("/ws", web::get().to(ws_handler))
     })
     .workers(config.workers)
-    .bind(("127.0.0.1", config.port))?
+    .bind((config.host.clone(), config.port))?
     .run();
 
     let handle = server.handle();
