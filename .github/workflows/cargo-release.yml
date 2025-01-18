@@ -18,11 +18,22 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4  # Checkout the repository using the specified action
 
+      - name: Set Up Lua
+        uses: leafo/gh-actions-lua@v10  # Set up Lua
+        with:
+          luaVersion: "5.1"
+
       - name: Set Up Rust
         uses: actions-rs/toolchain@v1  # Set up the Rust toolchain
         with:
           toolchain: stable  # Use the stable Rust toolchain
           override: true  # Override any existing toolchain configuration
+
+      - name: Build
+        run: cargo build
+
+      - name: Test
+        run: lua.exe ltests/test.lua
 
       - name: Install Cargo Release
         run: cargo install cargo-release  # Install the cargo-release tool
