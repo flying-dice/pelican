@@ -1,0 +1,38 @@
+# This GitHub Actions workflow is designed to create a GitHub Release
+# whenever a new tag is pushed to the repository or the workflow is manually triggered.
+
+name: Create GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger the workflow on any tag that matches the pattern 'v*'
+  workflow_dispatch:  # Allow manual triggering of the workflow
+
+jobs:
+  create_release:
+    name: Create GitHub Release
+    runs-on: windows-latest  # Use the latest Windows runner
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4  # Checkout the repository using the specified action
+
+      - name: Set Up Rust
+        uses: actions-rs/toolchain@v1  # Set up the Rust toolchain
+        with:
+          toolchain: stable  # Use the stable Rust toolchain
+          override: true  # Override any existing toolchain configuration
+
+      - name: Build DLL
+        run: cargo build --release  # Build the project in release mode
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1  # Use the release action to create a GitHub Release
+        with:
+          artifacts: target/release/*.dll  # Specify the artifacts to include in the release
+          tag: ${{ github.ref_name }}  # Use the tag created by `cargo release`
+          name: Release ${{ github.ref_name }}  # Set the release name to the tag name
+          body: |
+            This release was automatically created using cargo-release and GitHub Actions.  # Set the release body
+          token: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub token for authentication

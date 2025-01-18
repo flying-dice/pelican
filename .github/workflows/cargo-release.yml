@@ -1,0 +1,33 @@
+# This GitHub Actions workflow is designed to run the Cargo Release process
+# whenever there is a push to the 'main' branch or the workflow is manually triggered.
+
+name: Run Cargo Release
+
+on:
+  push:
+    branches:
+      - main  # Trigger the workflow on push events to the 'main' branch
+  workflow_dispatch:  # Allow manual triggering of the workflow
+
+jobs:
+  cargo_release:
+    name: Run Cargo Release
+    runs-on: windows-latest  # Use the latest Windows runner
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4  # Checkout the repository using the specified action
+
+      - name: Set Up Rust
+        uses: actions-rs/toolchain@v1  # Set up the Rust toolchain
+        with:
+          toolchain: stable  # Use the stable Rust toolchain
+          override: true  # Override any existing toolchain configuration
+
+      - name: Install Cargo Release
+        run: cargo install cargo-release  # Install the cargo-release tool
+
+      - name: Run Cargo Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub token for authentication
+        run: cargo release --execute --no-publish  # Run the cargo release command only creating a new tag but not publishing to crates.io

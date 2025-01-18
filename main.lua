@@ -2,18 +2,36 @@
 package.path = package.path .. ";.\\target\\debug\\?.lua"
 package.cpath = package.cpath .. ";.\\target\\debug\\?.dll"
 
-local json_rpc = require("json_rpc_server")
+local jsonrpc = require("lua_json_rpc")
 
-json_rpc.start_server(1234)
+local stop = jsonrpc.start_server({
+    host = "0.0.0.0",
+    port = 1359,
+    workers = 2
+})
 
-function on_rpc(payload)
-    local request = json_rpc.decode(payload)
+io.write("JSON-RPC server started on port 1359\n")
+io.flush()
 
-    if (request.id == nil) then
-        return
+function dump(o)
+    if type(o) == 'table' then
+        local s = '{ '
+        for k, v in pairs(o) do
+            if type(k) ~= 'number' then
+                k = '"' .. k .. '"'
+            end
+            s = s .. '[' .. k .. '] = ' .. dump(v) .. ','
+        end
+        return s .. '} '
+    else
+        return tostring(o)
     end
+end
 
-    print("Routing Request: " .. request.method)
+function on_rpc(request)
+    io.write("Routing Request: " .. request.method .. "\n")
+
+    io.write(dump(request) .. "\n")
 
     local response = {
         id = request.id,
@@ -26,9 +44,17 @@ function on_rpc(payload)
 
     io.flush()
 
-    return json_rpc.encode(response)
+    return response
 end
 
-while true do
-    json_rpc.process_rpc(on_rpc)
+local started = os.clock()
+
+---- Run for 10 seconds
+while os.clock() - started < 30 do
+    jsonrpc.process_rpc(on_rpc)
 end
+
+print("Shutting down JSON-RPC server")
+stop()
+
+os.execute("echo Press any key to continue... && pause > nul")
