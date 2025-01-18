@@ -1,7 +1,7 @@
 use crate::app::AppData;
 use log::{debug, info};
-use mlua::prelude::{LuaFunction, LuaString};
-use mlua::{Error, IntoLuaMulti, LightUserData, Lua, LuaSerdeExt, Nil, Value};
+use mlua::prelude::LuaFunction;
+use mlua::{Error, Lua, LuaSerdeExt, Value};
 use serde::{Deserialize, Serialize};
 use serde_json::Value::Null;
 use tokio::sync::oneshot;
@@ -81,7 +81,7 @@ pub fn process_rpc(
 ) -> Result<JsonRpcResponse, ProcessRpcError> {
     let luav = lua.to_value(&request).map_err(ProcessRpcError::LuaError)?;
 
-    let mut lua_table = luav.as_table().unwrap();
+    let lua_table = luav.as_table().unwrap();
 
     // Remove the id field from the table sent to the Lua function.
     if let None = &request.id {

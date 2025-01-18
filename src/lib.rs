@@ -49,9 +49,9 @@ pub fn lua_json_rpc(lua: &Lua) -> Result<LuaTable> {
                 mlua::Error::RuntimeError(format!("Error creating server: {:?}", e))
             })?;
 
-            lua.create_function(move |lua: &Lua, ()| {
+            lua.create_function(move |_lua: &Lua, ()| {
                 info!("Shutting Down Server");
-                handle.stop(false);
+                drop(handle.stop(false));
                 Ok(())
             })
         })?,
