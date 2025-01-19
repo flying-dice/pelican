@@ -1,7 +1,7 @@
 # This GitHub Actions workflow is designed to run the Cargo Release process
 # whenever there is a push to the 'main' branch or the workflow is manually triggered.
 
-name: Run Cargo Release
+name: Run Cargo Build and Test
 
 on:
   push:
