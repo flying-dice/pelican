@@ -11,7 +11,7 @@ on:
 
 jobs:
   cargo_release:
-    name: Run Cargo Release
+    name: Run Cargo Build
     runs-on: windows-latest  # Use the latest Windows runner
 
     steps:
@@ -45,11 +45,3 @@ jobs:
       - name: Test
         run: lua ltests/test.lua
         continue-on-error: true
-
-      - name: Install Cargo Release
-        run: cargo install cargo-release  # Install the cargo-release tool
-
-      - name: Run Cargo Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub token for authentication
-        run: cargo release --execute --no-publish  # Run the cargo release command only creating a new tag but not publishing to crates.io
