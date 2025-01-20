@@ -10,7 +10,7 @@ use actix_web::web::Data;
 use log::{error, info, warn};
 use mlua::prelude::*;
 use mlua::{Function, Lua, Nil, Result};
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use std::sync::Mutex;
 
 #[mlua::lua_module]
@@ -20,7 +20,6 @@ pub fn lua_json_rpc(lua: &Lua) -> Result<LuaTable> {
     // Create the shared queue
     let _data: Data<Mutex<AppData>> = Data::new(Mutex::new(AppData {
         rpc_queue: VecDeque::new(),
-        rpc_response_listeners: HashMap::new(),
         api_key: None,
     }));
 
@@ -66,8 +65,8 @@ pub fn lua_json_rpc(lua: &Lua) -> Result<LuaTable> {
                 mlua::Error::RuntimeError(format!("Error acquiring data lock: {:?}", e))
             })?;
 
-            match data_guard.rpc_queue.pop_front() {
-                Some(request) => match process_rpc(lua, &callback, &request) {
+            while let Some(request) = data_guard.rpc_queue.pop_front() {
+                match process_rpc(lua, &callback, &request.request) {
                     Ok(response) => {
                         info!("Processed request: {:?}", response);
                         let response_message = serde_json::to_string(&response).map_err(|e| {
@@ -78,8 +77,7 @@ pub fn lua_json_rpc(lua: &Lua) -> Result<LuaTable> {
                             ))
                         })?;
 
-                        if let Some(sender) = data_guard.rpc_response_listeners.remove(&response.id)
-                        {
+                        if let Some(sender) = request.response_sender {
                             match sender.send(response) {
                                 Ok(_) => info!("Published Response: {}", response_message),
                                 Err(e) => info!(
@@ -88,16 +86,14 @@ pub fn lua_json_rpc(lua: &Lua) -> Result<LuaTable> {
                                 ),
                             }
                         }
-
-                        Ok(())
                     }
                     Err(err) => {
                         error!("Error processing request: {:?}", err);
-                        Ok(())
                     }
-                },
-                None => Ok(()),
+                }
             }
+
+            Ok(())
         })?,
     )?;
 

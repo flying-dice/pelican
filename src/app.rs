@@ -6,16 +6,22 @@ use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServ
 use actix_ws::{Message, Session};
 use log::{error, info};
 use serde::Deserialize;
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use std::sync::Mutex;
 use std::thread;
+use std::time::Duration;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::Receiver;
+use tokio::time::timeout;
 
 pub struct AppData {
-    pub rpc_queue: VecDeque<JsonRpcRequest>,
-    pub rpc_response_listeners: HashMap<String, oneshot::Sender<JsonRpcResponse>>,
+    pub rpc_queue: VecDeque<AppRequest>,
     pub api_key: Option<String>,
+}
+
+pub struct AppRequest {
+    pub request: JsonRpcRequest,
+    pub response_sender: Option<oneshot::Sender<JsonRpcResponse>>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -51,21 +57,26 @@ async fn notify_session(
     mut session: Session,
     receiver: Receiver<JsonRpcResponse>,
 ) -> Result<(), Error> {
-    match receiver.await {
-        Ok(response) => {
-            info!("Received response: {:?}", response);
-            match serde_json::to_string(&response) {
-                Ok(response_message) => match session.text(response_message).await {
-                    Ok(_) => info!("Sent response to session"),
-                    Err(e) => error!("Failed to send response to session: {}", e),
-                },
-                Err(e) => {
-                    error!("Failed to serialize response: {}", e);
+    match timeout(Duration::from_secs(5), receiver).await {
+        Ok(response) => match response {
+            Ok(response) => {
+                info!("Received response: {:?}", response);
+                match serde_json::to_string(&response) {
+                    Ok(response_message) => match session.text(response_message).await {
+                        Ok(_) => info!("Sent response to session"),
+                        Err(e) => error!("Failed to send response to session: {}", e),
+                    },
+                    Err(e) => {
+                        error!("Failed to serialize response: {}", e);
+                    }
                 }
             }
-        }
+            Err(_) => {
+                error!("Failed to receive response");
+            }
+        },
         Err(_) => {
-            error!("Failed to receive response");
+            error!("Timed out waiting for response");
         }
     }
 
@@ -148,11 +159,14 @@ async fn rpc_handler(
     drop(data_guard);
 
     match receiver {
-        Some(receiver) => match receiver.await {
-            Ok(response) => serde_json::to_string(&response)
-                .map(|s| HttpResponse::Ok().body(s))
-                .map_err(|e| ErrorInternalServerError(e.to_string())),
-            Err(_) => Err(ErrorInternalServerError("Failed to receive response")),
+        Some(receiver) => match timeout(Duration::from_secs(5), receiver).await {
+            Ok(response) => match response {
+                Ok(response) => serde_json::to_string(&response)
+                    .map(|s| HttpResponse::Ok().body(s))
+                    .map_err(|e| ErrorInternalServerError(e.to_string())),
+                Err(_) => Err(ErrorInternalServerError("Failed to receive response")),
+            },
+            Err(_) => Err(ErrorInternalServerError("Timed out waiting for response")),
         },
         None => Ok(HttpResponse::Accepted().body("OK")),
     }

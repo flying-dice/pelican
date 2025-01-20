@@ -5,17 +5,16 @@ package.cpath = package.cpath .. ";.\\target\\debug\\?.dll"
 local jsonrpc = require("lua_json_rpc")
 
 local stop = jsonrpc.start_server({
-    host = "0.0.0.0",
+    host = "127.0.0.1",
     port = 1359,
-    workers = 2,
-    api_key = "super-secret-k3y"
+    workers = 4
 })
 
 io.write("JSON-RPC server started on port 1359\n")
 io.flush()
 
 function on_rpc(request)
-    io.write("Routing Request: " .. request.method .. "\n")
+    --io.write("Routing Request: " .. request.method .. "\n")
 
     local response = {
         id = request.id,
@@ -26,15 +25,15 @@ function on_rpc(request)
         response.result = request.params[1] - request.params[2]
     end
 
-    io.flush()
+    --io.flush()
 
     return response
 end
 
 local started = os.clock()
 
----- Run for 10 seconds
-while os.clock() - started < 30 do
+--while os.clock() - started < 30 do -- Run for 30 seconds
+while true do
     jsonrpc.process_rpc(on_rpc)
 end
 

@@ -1,4 +1,4 @@
-use crate::app::AppData;
+use crate::app::{AppData, AppRequest};
 use log::{debug, info};
 use mlua::prelude::LuaFunction;
 use mlua::{Error, Lua, LuaSerdeExt, Value};
@@ -56,13 +56,18 @@ pub fn push_rpc_request(
         Some(id) => {
             debug!("Adding request to queue with id: {}", id);
             let (sender, receiver) = oneshot::channel::<JsonRpcResponse>();
-            data.rpc_response_listeners.insert(id.clone(), sender);
-            data.rpc_queue.push_back(request);
+            data.rpc_queue.push_back(AppRequest {
+                request,
+                response_sender: Some(sender),
+            });
             Ok(Some(receiver))
         }
         None => {
             debug!("Adding notification to queue");
-            data.rpc_queue.push_back(request);
+            data.rpc_queue.push_back(AppRequest {
+                request,
+                response_sender: None,
+            });
             Ok(None)
         }
     }
