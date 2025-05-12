@@ -1,6 +1,5 @@
--- MAKE SURE YOUR WORKING DIRECTORY IS THE ROOT OF THE PROJECT NOT `src` OR ANY OTHER FOLDER
-package.path = package.path .. ";.\\target\\debug\\?.lua"
-package.cpath = package.cpath .. ";.\\target\\debug\\?.dll"
+package.path = package.path .. ";" .. lfs.writedir() .. "\\Mods\\tech\\Pelican\\scripts\\?.lua"
+package.cpath = package.cpath .. ";" .. lfs.writedir() .. "\\Mods\\tech\\Pelican\\bin\\?.dll"
 
 local P = require("pelican")
 
@@ -29,18 +28,13 @@ local sum_schema = {
     }
 }
 router:add_method("sum", function(params)
-    local res, err = P.valico.validate(sum_schema, params)
-
-    if (err) then
-        P.logger.error("Validation error: " .. err)
-        error(err)
-    end
-
+    P.valico.validate(sum_schema, params)
     local a, b = params[1], params[2]
 
     return a + b
 end)
 
-while true do
+timer.scheduleFunction(function(arg, time)
     server:process_rpc(router)
-end
+    return timer.getTime() + .1
+end, nil, timer.getTime() + .1)

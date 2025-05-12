@@ -1,5 +1,5 @@
 [package]
-name = "lua-json-rpc"
+name = "pelican"
 version = "0.0.3"
 edition = "2021"
 
@@ -11,6 +11,13 @@ actix-ws = "0.3.0"
 serde_json = "1.0.135"
 serde = { version = "1.0.217", features = ["derive"] }
 log = "0.4.25"
+log4rs = "1.3.0"
+metrics = "0.24.1"
+metrics-exporter-prometheus = "0.16.1"
+mime = "0.3.17"
+sysinfo = "0.33.1"
+uuid = { version = "1.16.0", features = ["v4"] }
+valico = "4.0.0"
 
 [lib]
 crate-type = ["cdylib"]
