@@ -4,7 +4,7 @@ version = "0.0.3"
 edition = "2021"
 
 [dependencies]
-mlua = { version = "0.10", features = ["lua51", "module", "async", "serialize"] }
+mlua = { version = "0.10", features = ["lua51", "module", "async", "serialize", "macros"] }
 tokio = { version = "1.43.0", features = ["rt", "macros"] }
 actix-web = "4.9.0"
 actix-ws = "0.3.0"
@@ -17,7 +17,9 @@ metrics-exporter-prometheus = "0.16.1"
 mime = "0.3.17"
 sysinfo = "0.33.1"
 uuid = { version = "1.16.0", features = ["v4"] }
-valico = "4.0.0"
+jsonschema = "0.30.0"
+reqwest = "0.12.15"
+sqlite = "0.37.0"
 
 [lib]
 crate-type = ["cdylib"]

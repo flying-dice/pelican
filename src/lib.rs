@@ -1,8 +1,10 @@
 mod json;
 mod json_rpc;
+mod json_schema;
 mod logger;
+mod requests;
+mod sqlite;
 mod uuid;
-mod valico;
 mod web;
 
 use mlua::prelude::LuaTable;
@@ -19,7 +21,9 @@ pub fn pelican(lua: &Lua) -> Result<LuaTable> {
     logger::inject_module(lua, &exports)?;
     uuid::inject_module(lua, &exports)?;
     web::inject_module(lua, &exports)?;
-    valico::inject_module(lua, &exports)?;
+    json_schema::inject_module(lua, &exports)?;
+    requests::inject_module(lua, &exports)?;
+    sqlite::inject_module(lua, &exports)?;
 
     Ok(exports)
 }

@@ -1,7 +1,7 @@
 use crate::web::AppData;
 use log::{debug, error, info};
-use mlua::prelude::{LuaFunction, LuaResult, LuaTable, LuaValue};
-use mlua::{Error, IntoLua, Lua, LuaSerdeExt, UserDataRef, Value};
+use mlua::prelude::{LuaError, LuaFunction, LuaResult, LuaTable, LuaValue};
+use mlua::{Lua, LuaSerdeExt, Value};
 use serde::{Deserialize, Serialize};
 use serde_json::Value::Null;
 use std::string::ToString;
@@ -89,17 +89,8 @@ pub fn push_rpc_request(
 
 #[derive(Debug)]
 pub enum ProcessRpcError {
-    LuaError(Error),
+    LuaError(LuaError),
     SerdeError(serde_json::Error),
-}
-
-impl std::fmt::Display for ProcessRpcError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ProcessRpcError::LuaError(err) => write!(f, "Lua error: {}", err),
-            ProcessRpcError::SerdeError(err) => write!(f, "Serde error: {}", err),
-        }
-    }
 }
 
 impl ProcessRpcError {
@@ -107,6 +98,20 @@ impl ProcessRpcError {
         match self {
             ProcessRpcError::LuaError(_) => "LuaError".to_string(),
             ProcessRpcError::SerdeError(_) => "SerdeError".to_string(),
+        }
+    }
+
+    fn to_str(&self) -> String {
+        match self {
+            ProcessRpcError::LuaError(err) => {
+                let msg = err.to_string();
+
+                msg.split("\nstack traceback:")
+                    .next()
+                    .unwrap_or(&*msg)
+                    .to_string()
+            }
+            ProcessRpcError::SerdeError(err) => format!("Serde error: {}", err),
         }
     }
 }
@@ -120,7 +125,7 @@ pub fn process_request(
     lua: &Lua,
     request: JsonRpcRequest,
     methods: &LuaTable,
-) -> Result<Option<JsonRpcResponse>, Error> {
+) -> Result<Option<JsonRpcResponse>, LuaError> {
     info!("Processing request: {:?}", request);
 
     debug!("Extracting method from request");
@@ -151,7 +156,7 @@ pub fn process_request(
                         error: Some(serde_json::json!({
                             "code": JSON_RPC_INTERNAL_ERROR,
                             "message": err.name(),
-                            "data": format!("{}", err),
+                            "data": err.to_str(),
                         })),
                     }))
                 }

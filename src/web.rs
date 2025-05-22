@@ -1,9 +1,6 @@
-use crate::json_rpc::{
-    process_request, process_rpc, push_rpc_request, AppRequest, JsonRpcRequest, JsonRpcResponse,
-    RpcError,
-};
+use crate::json_rpc::{process_request, push_rpc_request, AppRequest, JsonRpcResponse, RpcError};
 use actix_web::dev::ServerHandle;
-use actix_web::error::{ErrorBadRequest, ErrorInternalServerError, ErrorUnauthorized};
+use actix_web::error::{ErrorBadRequest, ErrorInternalServerError};
 use actix_web::http::header;
 use actix_web::web::{Data, Payload};
 use actix_ws::{Message, Session};
@@ -15,7 +12,8 @@ use log::{debug, error, info};
 use metrics::gauge;
 use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 use mlua::prelude::{LuaFunction, LuaResult, LuaString, LuaTable, LuaValue};
-use mlua::{Lua, LuaSerdeExt, UserData, UserDataMethods, UserDataRef};
+use mlua::Error::RuntimeError;
+use mlua::{IntoLuaMulti, Lua, LuaSerdeExt, UserData, UserDataMethods, UserDataRef};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
@@ -23,7 +21,6 @@ use std::thread;
 use std::time::Duration;
 use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, System};
 use tokio::runtime::Runtime;
-use tokio::sync::oneshot;
 use tokio::sync::oneshot::Receiver;
 use tokio::time::sleep;
 use tokio::time::timeout;
@@ -119,51 +116,47 @@ async fn get_ws(
 ) -> actix_web::Result<HttpResponse> {
     let (response, mut session, mut msg_stream) = actix_ws::handle(&req, body)?;
 
-    actix_web::rt::spawn({
-        async move {
-            while let Some(Ok(msg)) = msg_stream.recv().await {
-                match msg {
-                    Message::Text(text) => {
-                        let message = text.to_string();
+    while let Some(Ok(msg)) = msg_stream.recv().await {
+        match msg {
+            Message::Text(text) => {
+                let message = text.to_string();
 
-                        match data.lock() {
-                            Ok(mut data_guard) => {
-                                let response = push_rpc_request(&mut data_guard, &message);
-                                drop(data_guard);
+                match data.lock() {
+                    Ok(mut data_guard) => {
+                        let response = push_rpc_request(&mut data_guard, &message);
+                        drop(data_guard);
 
-                                match response {
-                                    Ok(Some(receiver)) => {
-                                        notify_session(session.clone(), receiver).await.ok();
-                                    }
-                                    Ok(None) => {
-                                        info!("Processed notification: {}", message);
-                                    }
-                                    Err(e) => match e {
-                                        RpcError::ParseError => {
-                                            error!("Failed to parse request: {}", message);
-                                        }
-                                    },
+                        match response {
+                            Ok(Some(receiver)) => {
+                                notify_session(session.clone(), receiver).await.ok();
+                            }
+                            Ok(None) => {
+                                info!("Processed notification: {}", message);
+                            }
+                            Err(e) => match e {
+                                RpcError::ParseError => {
+                                    error!("Failed to parse request: {}", message);
                                 }
-                            }
-                            Err(e) => {
-                                error!("Failed to acquire data lock: {}", e);
-                            }
+                            },
                         }
                     }
-                    Message::Ping(bytes) => {
-                        if session.pong(&bytes).await.is_err() {
-                            return;
-                        }
+                    Err(e) => {
+                        error!("Failed to acquire data lock: {}", e);
                     }
-                    Message::Close(reason) => {
-                        let _ = session.close(reason).await;
-                        break;
-                    }
-                    _ => break,
                 }
             }
+            Message::Ping(bytes) => {
+                if session.pong(&bytes).await.is_err() {
+                    error!("Failed to send pong");
+                }
+            }
+            Message::Close(reason) => {
+                let _ = session.close(reason).await;
+                break;
+            }
+            _ => break,
         }
-    });
+    }
 
     Ok(response)
 }
@@ -307,7 +300,7 @@ impl UserData for _Server {
             |lua: &Lua, this: &_Server, router: UserDataRef<_Router>| {
                 let mut data_guard = this.app_data.lock().map_err(|e| {
                     error!("Error acquiring data lock: {:?}", e);
-                    mlua::Error::RuntimeError(format!("Error acquiring data lock: {:?}", e))
+                    RuntimeError(format!("Error acquiring data lock: {:?}", e))
                 })?;
 
                 while let Some(request) = data_guard.rpc_queue.pop_front() {
@@ -342,7 +335,7 @@ impl UserData for _Server {
                     }
                 }
 
-                Ok(())
+                true.into_lua_multi(lua)
             },
         );
 
