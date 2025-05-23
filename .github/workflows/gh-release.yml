@@ -34,7 +34,7 @@ jobs:
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1  # Use the release action to create a GitHub Release
         with:
-          artifacts: target/release/*.dll,dcs/json-rpc_*.lua  # Specify the artifacts to include in the release
+          artifacts: target/release/*.dll,dcs/*.lua  # Specify the artifacts to include in the release
           tag: ${{ github.ref_name }}  # Use the tag created by `cargo release`
           name: Release ${{ github.ref_name }}  # Set the release name to the tag name
           body: |
