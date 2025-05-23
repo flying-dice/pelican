@@ -1,24 +1,103 @@
-use log::{debug, info};
-use mlua::prelude::{LuaError, LuaTable, LuaValue};
-use mlua::{IntoLuaMulti, Lua, Result, UserData, UserDataMethods, Value};
-use sqlite::Connection;
+use log::debug;
+use mlua::prelude::{LuaTable, LuaValue};
+use mlua::{ExternalError, IntoLuaMulti, Lua, Result, UserData, UserDataMethods, Value};
 use sqlite::State;
+use sqlite::{Connection, Statement};
+
+pub fn inject_module(lua: &Lua, table: &LuaTable) -> Result<()> {
+    let m = lua.create_table()?;
+
+    m.set("open", lua.create_function(open)?)?;
+
+    table.set("sqlite", m)?;
+
+    Ok(())
+}
+
+struct _SqliteConnection {
+    connection: Connection,
+}
+
+impl _SqliteConnection {
+    fn new(path: String) -> Result<_SqliteConnection> {
+        let connection = sqlite::open(path).expect("Failed to open SQLite database");
+        Ok(Self { connection })
+    }
+}
+
+impl UserData for _SqliteConnection {
+    fn add_methods<'lua, M: UserDataMethods<Self>>(methods: &mut M) {
+        methods.add_method("exec", |lua, this, query: String| {
+            match this.connection.execute(query) {
+                Ok(_) => true.into_lua_multi(lua),
+                Err(e) => {
+                    let error_message = format!("SQLite error: {}", e);
+                    debug!("{}", error_message);
+                    (LuaValue::Nil, error_message).into_lua_multi(lua)
+                }
+            }
+        });
+
+        methods.add_method(
+            "execute",
+            |lua, this, (query, params): (String, Option<LuaTable>)| {
+                debug!("Executing query: {}", query);
+                let mut statement = match prepare_statement(&this.connection, query, params) {
+                    Ok(statement) => statement,
+                    Err(e) => {
+                        debug!("Failed to prepare statement: {}", e);
+                        return (LuaValue::Nil, e.to_string()).into_lua_multi(lua);
+                    }
+                };
+                let result_table = match execute_and_map_result(lua, &mut statement) {
+                    Ok(table) => table,
+                    Err(e) => {
+                        debug!("Failed to execute statement: {}", e);
+                        return (LuaValue::Nil, e.to_string()).into_lua_multi(lua);
+                    }
+                };
+                result_table.into_lua_multi(lua)
+            },
+        );
+    }
+}
+fn open(_: &Lua, path: String) -> Result<_SqliteConnection> {
+    _SqliteConnection::new(path)
+}
 
 /**
-* Convert a Lua value to an SQLite value for binding.
-*/
-fn to_bindable_value(value: LuaValue) -> Result<sqlite::Value> {
-    match value {
-        LuaValue::Nil => Ok(sqlite::Value::Null),
-        LuaValue::Integer(v) => Ok(sqlite::Value::Integer(v)),
-        LuaValue::Number(v) => Ok(sqlite::Value::Float(v)),
-        LuaValue::String(v) => Ok(sqlite::Value::String(v.to_str()?.to_string())),
-        _ => {
-            debug!("Unsupported parameter type: {:?}", value);
-            Err(LuaError::RuntimeError(
-                "Unsupported parameter type".to_string(),
-            ))
-        }
+ * Prepare a statement for execution.
+ * This function takes a connection, a query string, and an optional Lua table of parameters.
+ * It returns a prepared statement or an error.
+ */
+fn prepare_statement(
+    conn: &Connection,
+    query: String,
+    params: Option<LuaTable>,
+) -> Result<Statement> {
+    debug!("Preparing query: {}", query);
+    let mut statement = conn.prepare(query).map_err(|e| {
+        debug!("Failed to prepare statement: {}", e);
+        format!("SQLite error: {}", e).into_lua_err()
+    })?;
+
+    debug!("Binding parameters: {:?}", params);
+    if let Some(params) = params {
+        bind_params(&mut statement, params)?;
+    }
+
+    Ok(statement)
+}
+
+/**
+ * Bind parameters to a statement from a Lua table.
+ * This function checks if the table is an array or a named parameter table.
+ */
+fn bind_params(statement: &mut Statement, params: LuaTable) -> Result<()> {
+    if is_lua_array(&params)? {
+        bind_array_params(statement, params)
+    } else {
+        bind_named_params(statement, params)
     }
 }
 
@@ -46,115 +125,96 @@ fn is_lua_array(table: &LuaTable) -> Result<bool> {
     Ok(true)
 }
 
-pub fn inject_module(lua: &Lua, table: &LuaTable) -> Result<()> {
-    let m = lua.create_table()?;
+/**
+ * Bind parameters to a statement from a Lua table.
+ * This function assumes that the table contains integer keys starting from 1.
+ */
+fn bind_array_params(statement: &mut Statement, params: LuaTable) -> Result<()> {
+    for entry in params.pairs::<usize, LuaValue>() {
+        match entry {
+            Ok((index, param)) => {
+                debug!("Binding parameter {} to {:?}", index, param);
+                let sqlite_value = to_bindable_value(param)?;
 
-    m.set("open", lua.create_function(open)?)?;
-
-    table.set("sqlite", m)?;
-
+                debug!("Bound parameter {} to {:?}", index, sqlite_value);
+                statement
+                    .bind((index, sqlite_value))
+                    .map_err(|e| format!("SQLite error: {}", e).into_lua_err())?;
+            }
+            Err(e) => {
+                debug!("Failed to bind parameter: {}", e);
+                return Err(format!("Failed to bind parameter: {}", e).into_lua_err());
+            }
+        }
+    }
     Ok(())
 }
 
-struct _SqliteConnection {
-    connection: Connection,
+/**
+ * Bind parameters to a statement from a Lua table.
+ * This function assumes that the table contains string keys.
+ */
+fn bind_named_params(statement: &mut Statement, params: LuaTable) -> Result<()> {
+    for entry in params.pairs::<String, LuaValue>() {
+        match entry {
+            Ok((key, param)) => {
+                debug!("Binding parameter {} to {:?}", key, param);
+                let sqlite_value = to_bindable_value(param)?;
+
+                debug!("Bound parameter {} to {:?}", key, sqlite_value);
+                statement
+                    .bind((format!(":{}", key).as_str(), sqlite_value))
+                    .map_err(|e| format!("SQLite error: {}", e).into_lua_err())?;
+            }
+            Err(e) => {
+                debug!("Failed to bind parameter: {}", e);
+                return Err(format!("Failed to bind parameter: {}", e).into_lua_err());
+            }
+        }
+    }
+    Ok(())
 }
 
-impl _SqliteConnection {
-    fn new(path: String) -> Result<_SqliteConnection> {
-        let connection = sqlite::open(path).expect("Failed to open SQLite database");
-        Ok(Self { connection })
+/**
+* Convert a Lua value to an SQLite value for binding.
+*/
+fn to_bindable_value(value: LuaValue) -> Result<sqlite::Value> {
+    match value {
+        LuaValue::Nil => Ok(sqlite::Value::Null),
+        LuaValue::Integer(v) => Ok(sqlite::Value::Integer(v)),
+        LuaValue::Number(v) => Ok(sqlite::Value::Float(v)),
+        LuaValue::String(v) => Ok(sqlite::Value::String(v.to_str()?.to_string())),
+        _ => {
+            debug!("Unsupported parameter type: {:?}", value);
+            Err("Unsupported parameter type".to_string().into_lua_err())
+        }
     }
 }
 
-impl UserData for _SqliteConnection {
-    fn add_methods<'lua, M: UserDataMethods<Self>>(methods: &mut M) {
-        methods.add_method("execute", |lua, this, query: String| {
-            match this.connection.execute(query) {
-                Ok(_) => true.into_lua_multi(lua),
-                Err(e) => {
-                    let error_message = format!("SQLite error: {}", e);
-                    debug!("{}", error_message);
-                    (false, error_message).into_lua_multi(lua)
-                }
-            }
-        });
+/**
+ * Execute a query and return the result as a Lua table.
+ * This function takes a Lua state, a statement, and returns a Lua table.
+ */
+fn execute_and_map_result(lua: &Lua, statement: &mut Statement) -> Result<LuaTable> {
+    let result_table = lua.create_table().expect("Failed to create result table");
+    let mut row_index = 1;
 
-        methods.add_method("query", |lua, this, (query, params): (String, LuaTable)| {
-            debug!("Preparing query: {}", query);
-            let mut statement = this
-                .connection
-                .prepare(query)
-                .expect("Failed to prepare query");
+    while let Ok(State::Row) = statement.next() {
+        let row_table = lua.create_table()?;
+        for (i, col_name) in statement.column_names().iter().enumerate() {
+            let value = match statement.read(i).expect("Failed to read column") {
+                sqlite::Value::Integer(v) => Value::Integer(v),
+                sqlite::Value::Float(v) => Value::Number(v),
+                sqlite::Value::String(v) => Value::String(lua.create_string(&v)?),
+                sqlite::Value::Binary(v) => Value::String(lua.create_string(&v)?),
+                sqlite::Value::Null => LuaValue::Nil,
+            };
+            row_table.set(col_name.as_str(), value)?;
+        }
 
-            if is_lua_array(&params).expect("Failed to check if params is an array") {
-                debug!("Binding parameters as array");
-                for entry in params.pairs::<usize, LuaValue>() {
-                    match entry {
-                        Ok((index, param)) => {
-                            debug!("Binding parameter {} to {:?}", index, param);
-                            let sqlite_value =
-                                to_bindable_value(param).expect("Failed to bind parameter");
-
-                            debug!("Bound parameter {} to {:?}", index, sqlite_value);
-                            statement
-                                .bind((index, sqlite_value))
-                                .expect("Failed to bind parameter");
-                        }
-                        Err(e) => {
-                            debug!("Failed to bind parameter: {}", e);
-                            return (false, format!("Failed to bind parameter: {}", e))
-                                .into_lua_multi(lua);
-                        }
-                    }
-                }
-            } else {
-                debug!("Binding parameters as table");
-                for entry in params.pairs::<String, LuaValue>() {
-                    match entry {
-                        Ok((key, param)) => {
-                            debug!("Binding parameter {} to {:?}", key, param);
-                            let sqlite_value =
-                                to_bindable_value(param).expect("Failed to bind parameter");
-
-                            debug!("Bound parameter {} to {:?}", key, sqlite_value);
-                            statement
-                                .bind((format!(":{}", key).as_str(), sqlite_value))
-                                .expect("Failed to bind parameter");
-                        }
-                        Err(e) => {
-                            debug!("Failed to bind parameter: {}", e);
-                            return (false, format!("Failed to bind parameter: {}", e))
-                                .into_lua_multi(lua);
-                        }
-                    }
-                }
-            }
-
-            let result_table = lua.create_table().expect("Failed to create result table");
-            let mut row_index = 1;
-
-            while let Ok(State::Row) = statement.next() {
-                let row_table = lua.create_table()?;
-                for (i, col_name) in statement.column_names().iter().enumerate() {
-                    let value = match statement.read(i).expect("Failed to read column") {
-                        sqlite::Value::Integer(v) => Value::Integer(v),
-                        sqlite::Value::Float(v) => Value::Number(v),
-                        sqlite::Value::String(v) => Value::String(lua.create_string(&v)?),
-                        sqlite::Value::Binary(v) => Value::String(lua.create_string(&v)?),
-                        sqlite::Value::Null => Value::Nil,
-                    };
-                    row_table.set(col_name.as_str(), value)?;
-                }
-
-                result_table.set(row_index, row_table)?;
-                row_index += 1;
-            }
-
-            result_table.into_lua_multi(lua)
-        });
+        result_table.set(row_index, row_table)?;
+        row_index += 1;
     }
-}
-fn open(_: &Lua, path: String) -> Result<_SqliteConnection> {
-    _SqliteConnection::new(path)
+
+    Ok(result_table)
 }

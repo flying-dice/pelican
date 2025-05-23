@@ -1,3 +1,4 @@
+mod collections;
 mod json;
 mod json_rpc;
 mod json_schema;
@@ -24,6 +25,7 @@ pub fn pelican(lua: &Lua) -> Result<LuaTable> {
     json_schema::inject_module(lua, &exports)?;
     requests::inject_module(lua, &exports)?;
     sqlite::inject_module(lua, &exports)?;
+    collections::inject_module(lua, &exports)?;
 
     Ok(exports)
 }

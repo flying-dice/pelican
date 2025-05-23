@@ -28,7 +28,7 @@ local Router = {}
 function Router:add_method(name, callback) end
 
 ---Creates a new server.
----@param config {host: string, port: integer}
+---@param config {host: string, port: number}
 ---@return pelican.web.Server
 function web.serve(config) end
 

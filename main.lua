@@ -65,7 +65,7 @@ router:add_method("get_weather", function()
 end)
 
 router:add_method("get_users_bind_place", function()
-    local users_res, err = connection:query("SELECT * FROM users WHERE age > ?;", { 20 })
+    local users_res, err = connection:execute("SELECT * FROM users WHERE age > ?;", { 20 })
 
     if (err) then
         P.logger.error("Database error: " .. err)
@@ -76,7 +76,7 @@ router:add_method("get_users_bind_place", function()
 end)
 
 router:add_method("get_users_bind_name", function()
-    local users_res, err = connection:query("SELECT * FROM users WHERE name = :name;", { name = 'John Doe' })
+    local users_res, err = connection:execute("SELECT id, name FROM users WHERE name = :name;", { name = 'John Doe' })
 
     if (err) then
         P.logger.error("Database error: " .. err)

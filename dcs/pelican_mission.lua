@@ -22,95 +22,81 @@ local server = P.web.serve({
 
 local router = P.web.router()
 
-local sum_params_validator = P.jsonschema.validator_for({
-    type = "array",
-    minItems = 2,
-    maxItems = 2,
-    items = {
-        type = "number"
-    }
-})
-
-router:add_method("sum", function(params)
-    local res, err = sum_params_validator:validate(params)
-
-    if (err) then
-        P.logger.error("Validation error: " .. err)
-        error(err)
-    end
-
-    local a, b = params[1], params[2]
-
-    return a + b
-end)
-
-router:add_method("get_weather", function()
-    local weather_res, err = P.requests.get(
-            "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&hourly=temperature_2m")
-
-    if (err) then
-        P.logger.error("Request error: " .. err)
-        error(err)
-    end
-
-    P.logger.info("Request status: " .. weather_res:get_status())
-
-    P.logger.info("Weather data: " .. weather_res:get_text())
-
-    return weather_res:get_text()
-end)
-
-local connection = P.sqlite.open("C:\\Users\\jonat\\RustroverProjects\\json-rpc-server\\pelican.db")
-connection:execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER);")
-connection:execute("INSERT INTO users (name, age) VALUES ('John Doe', 30);")
-connection:execute("INSERT INTO users (name, age) VALUES ('Jane Smith', 25);")
-
-router:add_method("get_users", function()
-    local users, err = connection:query("SELECT * FROM users WHERE age > ?;", { 20 })
-
-    if (err) then
-        P.logger.error("Database error: " .. err)
-        error(err)
-    end
-
-    return users
-end)
-
-connection:execute("CREATE TABLE IF NOT EXISTS airbases (id INTEGER PRIMARY KEY, name TEXT, x REAL, y REAL, z REAL, lat REAL, lng REAL, alt REAL);")
-
-for _, airbase in ipairs(world.getAirbases()) do
-    local position = airbase:getPosition().p
-    local lat, lon, alt = coord.LOtoLL(position)
-
-    connection:query("INSERT INTO airbases (id, name, x, y, z, lat, lng, alt) VALUES (?, ?, ?, ?, ?, ?, ?, ?);",
-            { airbase:getID(), airbase:getName(), position.x, position.y, position.z, lat, lon, alt })
-
-    P.logger.info("Airbase inserted: " .. airbase:getName())
-end
-
 router:add_method("get_airbases", function()
-    local abs = {}
-
-    for _, airbase in ipairs(world.getAirbases()) do
-        local ab = {}
-
-        local position = airbase:getPosition().p
-        local lat, lon, alt = coord.LOtoLL(position)
-
-        ab.id = airbase:getID()
-        ab.name = airbase:getName()
-        ab.x = position.x
-        ab.y = position.y
-        ab.z = position.z
-        ab.lat = lat
-        ab.lng = lon
-        ab.alt = alt
-
-        table.insert(abs, ab)
-
+    function generalPosObj(DCSpos)
+        lat, lon, alt = coord.LOtoLL(DCSpos)
+        return {
+            ['DCS'] = DCSpos,
+            ['World'] = {
+                ['lat'] = lat,
+                ['lon'] = lon,
+                ['alt'] = alt
+            }
+        }
     end
 
-    return abs
+    local reverse_category = {}
+
+    for k, v in pairs(Airbase.Category) do
+        reverse_category[v] = k
+    end
+
+    local airbases = {}
+
+    -- TODO: Get this from a correct location
+    local term_type = {
+        [16] = "Runway",
+        [40] = "HelicopterOnly",
+        [68] = "HardenedAirShelter",
+        [72] = "AirplaneOnly",
+        [100] = "SmallAirplane",
+        [104] = "OpenAirSpawn",
+        [176] = "AirplaneOnlyAndOpenAirSpawn",
+        [216] = "AllHelicopterUsable",
+        [244] = "AllAirplaneUsable",
+        [311] = "AllSmallAirplaneUsable",
+    }
+
+    for k, v in pairs(world.getAirbases()) do
+        local airbase = {
+            ID = v:getID(),
+            WorldID = v:getWorldID(),
+            callsign = v:getCallsign(),
+            typeName = v:getTypeName()
+        }
+
+        for _k, _v in pairs(v:getDesc()) do
+            airbase[_k] = _v
+        end
+
+        airbase["category_name"] = reverse_category[airbase.category]
+
+        airbase["runways"] = {}
+
+        for _k, _v in pairs(v:getRunways()) do
+            _v["id"] = _k
+            table.insert(airbase["runways"], _v)
+        end
+
+        airbase["parking"] = {}
+
+        for _k, _v in pairs(v:getParking()) do
+            _v["id"] = _k
+            table.insert(airbase["parking"], _v)
+        end
+
+        airbase["theatre"] = env.mission.theatre
+        airbase["pos"] = generalPosObj(v:getPoint())
+
+        for _k, _v in pairs(airbase.parking) do
+            _v.Term_Type_Name = term_type[_v.Term_Type]
+            _v.pos = generalPosObj(_v.vTerminalPos)
+        end
+
+        table.insert(airbases, airbase)
+    end
+
+    return airbases
 end)
 
 timer.scheduleFunction(function(arg, time)
