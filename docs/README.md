@@ -17,6 +17,8 @@ See [collections.md](collections.md) for more details.
 
 Encode Lua tables to JSON and decode JSON strings to Lua tables.
 
+See [json.md](json.md) for more details.
+
 ### `json_schema`
 
 Validate Lua tables against JSON schemas.
