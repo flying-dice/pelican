@@ -139,4 +139,5 @@ local t = v:to_lua_table()
 
 ## Tests
 
-See [test_collections.lua](../ltests/test_collections.lua) for tests with examples.
+See [test_collections.lua](https://github.com/flying-dice/pelican/tree/main/ltests/test_collections.lua) for tests with
+examples.
