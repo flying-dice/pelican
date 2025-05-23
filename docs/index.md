@@ -9,7 +9,7 @@ The following modules are available:
 
 ### `collections`
 
-Rust-style vector with methods for manipulation and iteration.
+Rust-style collections with methods for manipulation and iteration.
 
 See [collections.md](collections.md) for more details.
 
