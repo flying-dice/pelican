@@ -1,14 +1,14 @@
-2025-05-28T22:48:28.427159300+01:00 [INFO] pelican - Logger initialized successfully
-2025-05-28T22:48:28.427741600+01:00 [DEBUG] pelican::json - Encoding Lua value: Table(Ref(0xbdb2c0))
-2025-05-28T22:48:28.428313200+01:00 [DEBUG] pelican::json - Encoded JSON string: "{\"isActive\":true,\"name\":\"John\",\"age\":30}"
-2025-05-28T22:48:28.428373700+01:00 [DEBUG] pelican::json - Decoding JSON: "{\"isActive\":true,\"name\":\"John\",\"age\":30}"
-2025-05-28T22:48:28.428551200+01:00 [DEBUG] pelican::json - Decoded JSON value: Object {"age": Number(30), "isActive": Bool(true), "name": String("John")}
-2025-05-28T22:48:28.428587800+01:00 [DEBUG] pelican::json - Converted to Lua value: Table(Ref(0xbdb310))
-2025-05-28T22:48:28.429066+01:00 [DEBUG] pelican::logger - This is a debug message
-2025-05-28T22:48:28.429081400+01:00 [INFO] pelican::logger - This is an info message
-2025-05-28T22:48:28.429086800+01:00 [WARN] pelican::logger - This is a warning message
-2025-05-28T22:48:28.429091200+01:00 [ERROR] pelican::logger - This is an error message
-2025-05-28T22:48:28.429813700+01:00 [DEBUG] PELICAN.TEST.INFO - This is a namespaced debug message
-2025-05-28T22:48:28.429838+01:00 [INFO] PELICAN.TEST - This is a namespaced info message
-2025-05-28T22:48:28.429854300+01:00 [WARN] PELICAN.TEST - This is a namespaced warning message
-2025-05-28T22:48:28.429869300+01:00 [ERROR] PELICAN.TEST - This is a namespaced error message
+2025-05-28T22:50:13.515009400+01:00 [INFO] pelican - Logger initialized successfully
+2025-05-28T22:50:13.515479100+01:00 [DEBUG] pelican::json - Encoding Lua value: Table(Ref(0x52b0e0))
+2025-05-28T22:50:13.515576500+01:00 [DEBUG] pelican::json - Encoded JSON string: "{\"isActive\":true,\"name\":\"John\",\"age\":30}"
+2025-05-28T22:50:13.515608600+01:00 [DEBUG] pelican::json - Decoding JSON: "{\"isActive\":true,\"name\":\"John\",\"age\":30}"
+2025-05-28T22:50:13.515660+01:00 [DEBUG] pelican::json - Decoded JSON value: Object {"age": Number(30), "isActive": Bool(true), "name": String("John")}
+2025-05-28T22:50:13.515684400+01:00 [DEBUG] pelican::json - Converted to Lua value: Table(Ref(0x52ae10))
+2025-05-28T22:50:13.517661800+01:00 [DEBUG] pelican::logger - This is a debug message
+2025-05-28T22:50:13.517681700+01:00 [INFO] pelican::logger - This is an info message
+2025-05-28T22:50:13.517687500+01:00 [WARN] pelican::logger - This is a warning message
+2025-05-28T22:50:13.517692+01:00 [ERROR] pelican::logger - This is an error message
+2025-05-28T22:50:13.517820300+01:00 [DEBUG] PELICAN.TEST.INFO - This is a namespaced debug message
+2025-05-28T22:50:13.517833+01:00 [INFO] PELICAN.TEST - This is a namespaced info message
+2025-05-28T22:50:13.517842400+01:00 [WARN] PELICAN.TEST - This is a namespaced warning message
+2025-05-28T22:50:13.517852+01:00 [ERROR] PELICAN.TEST - This is a namespaced error message

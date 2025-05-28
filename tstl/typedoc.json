@@ -30,7 +30,7 @@
     "lua"
   ],
   "theme": "default",
-  "out": "_docs",
+  "out": "../docs",
   "searchInComments": true,
   "searchInDocuments": true
 }
