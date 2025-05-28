@@ -1,0 +1,36 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "Pelican",
+  "projectDocuments": [
+    "docs/gui.md",
+    "docs/mission.md",
+    "docs/option_1.md",
+    "docs/option_2.md"
+  ],
+  "navigationLinks": {
+    "GitHub": "https://github.com/flying-dice/pelican"
+  },
+  "headings": {
+    "readme": false,
+    "document": false
+  },
+  "readme": "./docs/index.md",
+  "includeVersion": true,
+  "highlightLanguages": [
+    "bash",
+    "console",
+    "css",
+    "html",
+    "javascript",
+    "json",
+    "jsonc",
+    "json5",
+    "tsx",
+    "typescript",
+    "lua"
+  ],
+  "theme": "default",
+  "out": "_docs",
+  "searchInComments": true,
+  "searchInDocuments": true
+}

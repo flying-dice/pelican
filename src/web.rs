@@ -9,20 +9,16 @@ use actix_web::{
     get, middleware, post, App, Error, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use log::{debug, error, info};
-use metrics::gauge;
-use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 use mlua::prelude::{LuaFunction, LuaResult, LuaString, LuaTable, LuaValue};
 use mlua::Error::RuntimeError;
 use mlua::{IntoLuaMulti, Lua, LuaSerdeExt, UserData, UserDataMethods, UserDataRef};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
-use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, System};
 use tokio::runtime::Runtime;
 use tokio::sync::oneshot::Receiver;
-use tokio::time::sleep;
 use tokio::time::timeout;
 
 pub fn inject_module(lua: &Lua, table: &LuaTable) -> LuaResult<()> {
@@ -68,7 +64,6 @@ async fn notify_session(
 
 pub struct AppData {
     pub rpc_queue: VecDeque<AppRequest>,
-    pub prometheus_handle: Arc<PrometheusHandle>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -80,7 +75,7 @@ struct Health {
 
 #[post("/rpc")]
 async fn post_rpc(
-    req: HttpRequest,
+    _req: HttpRequest,
     data: Data<Mutex<AppData>>,
     body: String,
 ) -> Result<HttpResponse, Error> {
@@ -162,7 +157,7 @@ async fn get_ws(
 }
 
 #[get("/health")]
-async fn get_health(app_data: Data<AppData>) -> impl Responder {
+async fn get_health(_app_data: Data<AppData>) -> impl Responder {
     let health = Health {
         name: "pelican".to_string(),
         status: "OK".to_string(),
@@ -180,50 +175,6 @@ async fn get_health(app_data: Data<AppData>) -> impl Responder {
                 .body("{\"error\": \"Internal Server Error\"}")
         }
     }
-}
-
-#[get("/metrics")]
-async fn get_metrics(app_data: Data<AppData>) -> impl Responder {
-    let mut sys = System::new_all();
-
-    gauge!("used_memory").set(sys.used_memory() as f64);
-    gauge!("total_memory").set(sys.total_memory() as f64);
-    gauge!("total_swap").set(sys.total_swap() as f64);
-    gauge!("used_swap").set(sys.used_swap() as f64);
-    gauge!("cpus").set(sys.cpus().len() as f64);
-    gauge!("global_cpu_usage").set(sys.global_cpu_usage());
-
-    // Wait a bit because CPU usage is based on diff.
-    sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL).await;
-    // Refresh CPU usage to get actual value.
-    sys.refresh_processes_specifics(
-        ProcessesToUpdate::All,
-        true,
-        ProcessRefreshKind::nothing().with_cpu(),
-    );
-
-    let process = sys.process(sysinfo::get_current_pid().unwrap()).unwrap();
-
-    if let Some(tasks) = process.tasks() {
-        tasks.iter().for_each(|pid| {
-            if let Some(process) = sys.process(*pid) {
-                gauge!("process_memory", "pid" => process.pid().to_string())
-                    .set(process.memory() as f64);
-                gauge!("process_virtual_memory","pid" => process.pid().to_string())
-                    .set(process.virtual_memory() as f64);
-                gauge!("cpu_usage", "pid" => process.pid().to_string() ).set(process.cpu_usage());
-            }
-        });
-    } else {
-        gauge!("process_memory", "pid" => process.pid().to_string()).set(process.memory() as f64);
-        gauge!("process_virtual_memory","pid" => process.pid().to_string())
-            .set(process.virtual_memory() as f64);
-        gauge!("cpu_usage", "pid" => process.pid().to_string() ).set(process.cpu_usage());
-    }
-
-    HttpResponse::Ok()
-        .insert_header(header::ContentType(mime::TEXT_PLAIN_UTF_8))
-        .body(app_data.prometheus_handle.render())
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -251,7 +202,7 @@ impl UserData for _Router {
 
         methods.add_method(
             "add_method",
-            |lua: &Lua, this: &_Router, (name, callback): (LuaString, LuaFunction)| {
+            |_lua: &Lua, this: &_Router, (name, callback): (LuaString, LuaFunction)| {
                 debug!("Adding method: {:?}", name);
 
                 this.methods
@@ -341,7 +292,7 @@ impl UserData for _Server {
 
         methods.add_method(
             "stop",
-            |lua: &Lua, this: &_Server, graceful: Option<bool>| {
+            |_lua: &Lua, this: &_Server, graceful: Option<bool>| {
                 info!("Stopping server...");
 
                 let graceful = graceful.unwrap_or(false);
@@ -358,8 +309,10 @@ impl UserData for _Server {
 
         methods.add_async_method(
             "async_stop",
-            |lua: Lua, this: UserDataRef<_Server>, graceful: bool| async move {
+            |_lua: Lua, this: UserDataRef<_Server>, graceful: Option<bool>| async move {
                 info!("Stopping server...");
+
+                let graceful = graceful.unwrap_or(false);
 
                 let handle = this.handle.clone();
                 handle.stop(graceful).await;
@@ -390,13 +343,8 @@ fn serve(lua: &Lua, config: LuaValue) -> LuaResult<_Server> {
 
     debug!("Serving Web Server: {:?}", config);
 
-    let prometheus_handle = PrometheusBuilder::new()
-        .install_recorder()
-        .expect("Failed to create PrometheusBuilder");
-
     let app_data = Data::new(Mutex::new(AppData {
         rpc_queue: VecDeque::new(),
-        prometheus_handle: Arc::new(prometheus_handle),
     }));
 
     let app_data_clone = app_data.clone();
@@ -407,7 +355,6 @@ fn serve(lua: &Lua, config: LuaValue) -> LuaResult<_Server> {
         App::new()
             .wrap(middleware::Logger::default())
             .service(get_ws)
-            .service(get_metrics)
             .service(get_health)
             .service(post_rpc)
             .app_data(Data::clone(&app_data))

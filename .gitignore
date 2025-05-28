@@ -4,3 +4,5 @@ logs
 .lua/
 .source/
 /pelican.log
+node_modules
+_docs

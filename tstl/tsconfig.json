@@ -1,0 +1,26 @@
+{
+  "$schema": "https://raw.githubusercontent.com/TypeScriptToLua/TypeScriptToLua/master/tsconfig-schema.json",
+  "compilerOptions": {
+    "target": "ES6",
+    "lib": [
+      "ES6"
+    ],
+    "moduleResolution": "Node",
+    "types": [
+      "lua-types/5.1",
+      "@typescript-to-lua/language-extensions"
+    ],
+    "strict": true,
+    "declaration": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "tstl": {
+    "luaTarget": "5.1",
+    "luaLibImport": "require",
+    "sourceMapTraceback": false,
+    "noResolvePaths": [
+      "pelican"
+    ]
+  }
+}

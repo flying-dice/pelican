@@ -1,11 +1,15 @@
+//! A Lua module that provides collection types.
+//!
 use mlua::prelude::*;
 use mlua::{UserData, UserDataMethods, Value};
 
+/// A Lua module that provides a vector-like collection type.
 #[derive(Debug, Clone)]
 pub struct _Vec {
     data: Vec<LuaValue>,
 }
 
+/// Implementation of the `_Vec` collection type.
 impl _Vec {
     pub fn new(_: &Lua, table: Option<LuaTable>) -> LuaResult<Self> {
         let mut data = Vec::new();
@@ -59,7 +63,7 @@ impl _Vec {
         Ok(result)
     }
 
-    pub fn reverse(&mut self, lua: &Lua) -> LuaResult<()> {
+    pub fn reverse(&mut self, _lua: &Lua) -> LuaResult<()> {
         self.data.reverse();
         Ok(())
     }
@@ -76,7 +80,7 @@ impl _Vec {
 
     pub fn reduce(
         &self,
-        lua: &Lua,
+        _lua: &Lua,
         func: LuaFunction,
         accumulator: LuaValue,
     ) -> LuaResult<LuaValue> {
@@ -147,17 +151,14 @@ pub fn inject_module(lua: &Lua, table: &LuaTable) -> LuaResult<()> {
     let vec_metatable = lua.create_table()?;
     vec_metatable.set(
         "__call",
-        lua.create_function(|lua, (_, initial_table): (LuaTable, Option<LuaTable>)| {
-            _Vec::new(lua, initial_table)
-        })?,
+        lua.create_function(
+            |lua, (_self, initial_table): (LuaTable, Option<LuaTable>)| {
+                _Vec::new(lua, initial_table)
+            },
+        )?,
     )?;
 
     let vec_cls = lua.create_table()?;
-
-    m.set(
-        "Vec",
-        lua.create_function(|lua, initial_table: Option<LuaTable>| _Vec::new(lua, initial_table))?,
-    )?;
 
     vec_cls.set_metatable(Some(vec_metatable));
 

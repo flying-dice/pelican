@@ -1,0 +1,21 @@
+{
+  "name": "pelican",
+  "version": "0.0.3",
+  "description": "",
+  "scripts": {
+    "build": "tstl",
+    "postbuild": "npx typedoc --entryPointStrategy Expand types",
+    "dev": "tstl --watch",
+    "test": "\"\"C:\\Program Files\\lua-5.1.5_Win64_bin\\lua5.1.exe\"\" test.lua",
+    "example": "\"\"C:\\Program Files\\lua-5.1.5_Win64_bin\\lua5.1.exe\"\" example.lua"
+  },
+  "author": "Flying Dice",
+  "license": "ISC",
+  "devDependencies": {
+    "lua-types": "^2.13.1",
+    "typedoc": "^0.28.5",
+    "typedoc-github-theme": "^0.3.0",
+    "typescript": "^5.8.2",
+    "typescript-to-lua": "^1.31.1"
+  }
+}

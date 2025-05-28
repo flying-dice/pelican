@@ -18,6 +18,10 @@ print("========== test_json-schema.lua ==========")
 dofile("./ltests/test_json-schema.lua")
 print("\n")
 
+print("========== test_logger.lua ==========")
+dofile("./ltests/test_logger.lua")
+print("\n")
+
 print("========== test_sqlite.lua ==========")
 dofile("./ltests/test_sqlite.lua")
 print("\n")

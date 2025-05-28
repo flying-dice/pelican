@@ -11,9 +11,9 @@ use tokio::sync::oneshot::Receiver;
 const JSON_RPC_VERSION: &str = "2.0";
 const JSON_RPC_METHOD_NOT_FOUND: i16 = -32601;
 const JSON_RPC_INTERNAL_ERROR: i16 = -32603;
-const JSON_RPC_PARSE_ERROR: i16 = -32700;
-const JSON_RPC_INVALID_REQUEST: i16 = -32600;
-const JSON_RPC_INVALID_PARAMS: i16 = -32602;
+// const JSON_RPC_PARSE_ERROR: i16 = -32700;
+// const JSON_RPC_INVALID_REQUEST: i16 = -32600;
+// const JSON_RPC_INVALID_PARAMS: i16 = -32602;
 
 /// https://www.jsonrpc.org/specification#request_object:~:text=aspects%20of%201.0.-,4%20Request%20object,-A%20rpc%20call
 #[derive(Debug, Serialize, Deserialize)]
