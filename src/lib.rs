@@ -28,7 +28,7 @@ pub fn pelican(lua: &Lua) -> Result<LuaTable> {
     exports.set("name", "pelican")?;
     exports.set("version", "0.1.0")?;
 
-    json::_inject_module(lua, &exports)?;
+    json::inject_module(lua, &exports)?;
     logger::inject_module(lua, &exports)?;
     uuid::inject_module(lua, &exports)?;
     web::inject_module(lua, &exports)?;
