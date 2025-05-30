@@ -2,7 +2,7 @@
 
 --Initialization script for the Mission lua Environment (SSE)
 
-dofile('Scripts/ScriptingSystem.lua')
+dofile("Scripts/ScriptingSystem.lua")
 
 dofile(lfs.writedir() .. "/Scripts/PelicanTestMission.lua")
 
@@ -17,10 +17,10 @@ local function sanitizeModule(name)
 end
 
 do
-    sanitizeModule('os')
-    sanitizeModule('io')
-    sanitizeModule('lfs')
-    _G['require'] = nil
-    _G['loadlib'] = nil
-    _G['package'] = nil
+    sanitizeModule("os")
+    sanitizeModule("io")
+    sanitizeModule("lfs")
+    _G["require"] = nil
+    _G["loadlib"] = nil
+    _G["package"] = nil
 end

@@ -26,18 +26,18 @@ general purpose AI control.
 
 **Example Scenario:**
 
-* Running an HTTP backend for a web client showing player locations.
-* Implementing reusable logic across missions.
+- Running an HTTP backend for a web client showing player locations.
+- Implementing reusable logic across missions.
 
 **Pros:**
 
-* ✅ Keeps `require` and `package` disabled after setup (maintains DCS security).
-* ✅ Global effect—only needs to be set up once.
-* ✅ No modification to mission files needed.
+- ✅ Keeps `require` and `package` disabled after setup (maintains DCS security).
+- ✅ Global effect—only needs to be set up once.
+- ✅ No modification to mission files needed.
 
 **Cons:**
 
-* ⚠️ Runs across **all missions**, which may be unnecessary for mission-specific logic.
+- ⚠️ Runs across **all missions**, which may be unnecessary for mission-specific logic.
 
 See [option 1 documentation](./option_1.md) for details.
 
@@ -52,16 +52,16 @@ Required when Pelican is used **within mission-embedded scripts** that must call
 
 **Example Scenario:**
 
-* Using Pelican and SQLite for persistent mission data.
+- Using Pelican and SQLite for persistent mission data.
 
 **Pros:**
 
-* ✅ Enables full Lua module functionality within mission scripts.
+- ✅ Enables full Lua module functionality within mission scripts.
 
 **Cons:**
 
-* ⚠️ Introduces potential security risks.
-* ⚠️ Not recommended for multiplayer or untrusted missions.
+- ⚠️ Introduces potential security risks.
+- ⚠️ Not recommended for multiplayer or untrusted missions.
 
 See [option 2 documentation](./option_2.md) for details.
 

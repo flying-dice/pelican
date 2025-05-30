@@ -5,9 +5,9 @@
 Re-enabling `require` and `package` in `MissionScripting.lua` allows mission scripts to load external Lua modules—but
 this comes with security risks in multiplayer:
 
-* **Untrusted module loading**: Missions downloaded from servers can `require` arbitrary Lua files, potentially chaining
+- **Untrusted module loading**: Missions downloaded from servers can `require` arbitrary Lua files, potentially chaining
   code in unintended ways.
-* **No user warning**: Players won't be notified when a mission uses `require`, making it easy to run hidden or unsafe
+- **No user warning**: Players won't be notified when a mission uses `require`, making it easy to run hidden or unsafe
   code.
 
 **Only enable `require`/`package` in trusted environments. For safer distribution, use [option 1](./option_1.md)
@@ -21,7 +21,7 @@ To use Pelican in the MSE, you will need to remove the sanitization of the `pack
 This file is located in the `Scripts` folder of your DCS World installation, for example:
 
 > ⚠️ Two dashes `--` are used to comment out the code, so you can remove the sanitization of the `package` and
-`require`
+> `require`
 
 {@includeCode ./MissionScripting_1.lua}
 

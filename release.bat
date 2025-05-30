@@ -12,7 +12,7 @@ if exist target (
 cargo build
 
 :: Run Tests
-lua5.1 ltests/test.lua
+lua5.1 ltests/index.lua
 
 :: Run Release
 cargo release --execute --no-publish

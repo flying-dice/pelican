@@ -1,4 +1,3 @@
-use crate::collections::_Vec;
 use log::{debug, error, info, warn, LevelFilter};
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Root};

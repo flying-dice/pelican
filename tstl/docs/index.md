@@ -9,10 +9,10 @@ within DCS world.
 
 ## Key Features
 
-* ✅ Embedded **HTTP** and **WebSocket** JSON-RPC server for real-time, bidirectional communication with DCS
-* ✅ Built-in **SQLite** module providing direct access to SQLite APIs from within the LUA environment
-* ✅ Compatible with both **GUI** and **Mission** scripting environments
-* ✅ Modular architecture for flexibility and extensibility
+- ✅ Embedded **HTTP** and **WebSocket** JSON-RPC server for real-time, bidirectional communication with DCS
+- ✅ Built-in **SQLite** module providing direct access to SQLite APIs from within the LUA environment
+- ✅ Compatible with both **GUI** and **Mission** scripting environments
+- ✅ Modular architecture for flexibility and extensibility
 
 ## Installation
 
@@ -23,6 +23,7 @@ Pelican is distributed as a `DLL` file. To install:
    ```
    %USERPROFILE%\Saved Games\DCS\Mods\tech\Pelican\bin
    ```
+
 2. Replace `Pelican` with the actual name of your mod if you want to isolate it from other usages, i.e. for Version
    Pinning
    or to avoid conflicts with other mods.

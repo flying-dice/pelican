@@ -4,18 +4,21 @@
   "description": "",
   "scripts": {
     "build": "tstl",
-    "postbuild": "npx typedoc --entryPointStrategy Expand types",
+    "build:docs": "npx typedoc --entryPointStrategy Expand types",
     "dev": "tstl --watch",
-    "test": "\"\"C:\\Program Files\\lua-5.1.5_Win64_bin\\lua5.1.exe\"\" test.lua",
-    "example": "\"\"C:\\Program Files\\lua-5.1.5_Win64_bin\\lua5.1.exe\"\" example.lua"
+    "test": "\"\"C:\\Program Files\\lua-5.1.5_Win64_bin\\lua5.1.exe\"\" tests/index.lua",
+    "posttest": "npm run build:docs",
+    "fmt": "prettier --write \"**/*.{ts,js}\" \"**/*.md\" && node fmt.js"
   },
   "author": "Flying Dice",
   "license": "ISC",
   "devDependencies": {
+    "lua-fmt": "^2.6.0",
     "lua-types": "^2.13.1",
+    "prettier": "^3.5.3",
     "typedoc": "^0.28.5",
     "typedoc-github-theme": "^0.3.0",
-    "typescript": "^5.8.2",
+    "typescript": "^5.8.3",
     "typescript-to-lua": "^1.31.1"
   }
 }

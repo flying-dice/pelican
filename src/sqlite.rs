@@ -1,5 +1,5 @@
 use log::debug;
-use mlua::prelude::{LuaTable, LuaValue};
+use mlua::prelude::{LuaResult, LuaTable, LuaValue};
 use mlua::{ExternalError, IntoLuaMulti, Lua, Result, UserData, UserDataMethods, Value};
 use sqlite::State;
 use sqlite::{Connection, Statement};
@@ -19,8 +19,11 @@ struct _SqliteConnection {
 }
 
 impl _SqliteConnection {
-    fn new(path: String) -> Result<_SqliteConnection> {
-        let connection = sqlite::open(path).expect("Failed to open SQLite database");
+    fn new(path: String) -> LuaResult<_SqliteConnection> {
+        let connection = sqlite::open(path).map_err(|e| {
+            debug!("Failed to open SQLite connection: {}", e);
+            format!("SQLite error: {}", e).into_lua_err()
+        })?;
         Ok(Self { connection })
     }
 }
@@ -43,7 +46,10 @@ impl UserData for _SqliteConnection {
             |lua, this, (query, params): (String, Option<LuaTable>)| {
                 debug!("Executing query: {}", query);
                 let mut statement = match prepare_statement(&this.connection, query, params) {
-                    Ok(statement) => statement,
+                    Ok(statement) => {
+                        debug!("Statement prepared successfully");
+                        statement
+                    }
                     Err(e) => {
                         debug!("Failed to prepare statement: {}", e);
                         return (LuaValue::Nil, e.to_string()).into_lua_multi(lua);
@@ -199,7 +205,10 @@ fn execute_and_map_result(lua: &Lua, statement: &mut Statement) -> Result<LuaTab
     let result_table = lua.create_table().expect("Failed to create result table");
     let mut row_index = 1;
 
+    debug!("Executing statement");
+
     while let Ok(State::Row) = statement.next() {
+        debug!("Row {}", row_index);
         let row_table = lua.create_table()?;
         for (i, col_name) in statement.column_names().iter().enumerate() {
             let value = match statement.read(i).expect("Failed to read column") {
@@ -212,9 +221,13 @@ fn execute_and_map_result(lua: &Lua, statement: &mut Statement) -> Result<LuaTab
             row_table.set(col_name.as_str(), value)?;
         }
 
+        debug!("Row data: {:?}", row_table);
+
         result_table.set(row_index, row_table)?;
         row_index += 1;
     }
+
+    debug!("Statement executed successfully");
 
     Ok(result_table)
 }

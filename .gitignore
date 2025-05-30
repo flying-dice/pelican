@@ -3,5 +3,7 @@
 logs
 .lua/
 .source/
-/pelican.log
+pelican.log
 node_modules
+pelican.db
+*.db
