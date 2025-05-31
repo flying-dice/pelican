@@ -40,10 +40,15 @@ pub fn pelican(lua: &Lua) -> Result<LuaTable> {
 }
 
 fn get_logger_file(lua: &Lua) -> Result<PathBuf> {
-    match get_lfs_writedir(lua) {
-        Ok(writedir) => Ok(PathBuf::from(writedir).join("Logs/pelican.log")),
-        Err(_err) => Ok(env::current_dir()?.join("pelican.log")),
+    if let Ok(writedir) = get_lfs_writedir(lua) {
+        return Ok(PathBuf::from(writedir).join("Logs/pelican.log"));
     }
+
+    if let Ok(current_dir) = env::current_dir() {
+        return Ok(current_dir.join("pelican.log"));
+    }
+
+    Ok("./pelican.log".into())
 }
 
 fn get_lfs_writedir(lua: &Lua) -> Result<String> {
