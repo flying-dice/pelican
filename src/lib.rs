@@ -2,23 +2,30 @@ pub mod json;
 mod json_rpc;
 mod json_schema;
 mod logger;
+mod module_config;
 mod requests;
 mod sqlite;
 pub mod uuid;
 mod web;
 
+use log::LevelFilter::Trace;
 use log::{error, info, LevelFilter};
-use mlua::prelude::{LuaFunction, LuaTable, LuaValue};
-use mlua::{Lua, LuaSerdeExt, Result};
+use mlua::prelude::{LuaFunction, LuaResult, LuaTable};
+use mlua::Lua;
+use module_config::ModuleConfig;
 use std::env;
 use std::path::PathBuf;
 
 #[mlua::lua_module]
-pub fn pelican(lua: &Lua) -> Result<LuaTable> {
-    match logger::init_config(
-        get_logger_file(lua)?,
-        get_logger_level(lua).unwrap_or(LevelFilter::Trace),
-    ) {
+pub fn pelican(lua: &Lua) -> LuaResult<LuaTable> {
+    let module_config: ModuleConfig = lua
+        .globals()
+        .get::<ModuleConfig>("PELICAN")
+        .unwrap_or_default();
+
+    let logger_level: LevelFilter = module_config.logger_level.unwrap_or(Trace);
+
+    match logger::init_config(get_logger_file_path(lua)?, logger_level) {
         Ok(_) => info!("Logger initialized successfully"),
         Err(e) => error!("Failed to initialize logger: {}", e),
     };
@@ -39,7 +46,7 @@ pub fn pelican(lua: &Lua) -> Result<LuaTable> {
     Ok(exports)
 }
 
-fn get_logger_file(lua: &Lua) -> Result<PathBuf> {
+fn get_logger_file_path(lua: &Lua) -> LuaResult<PathBuf> {
     if let Ok(writedir) = get_lfs_writedir(lua) {
         return Ok(PathBuf::from(writedir).join("Logs/pelican.log"));
     }
@@ -51,20 +58,9 @@ fn get_logger_file(lua: &Lua) -> Result<PathBuf> {
     Ok("./pelican.log".into())
 }
 
-fn get_lfs_writedir(lua: &Lua) -> Result<String> {
+fn get_lfs_writedir(lua: &Lua) -> LuaResult<String> {
     lua.globals()
         .get::<LuaTable>("lfs")?
         .get::<LuaFunction>("writedir")?
         .call(())
-}
-
-fn get_logger_level(lua: &Lua) -> Result<LevelFilter> {
-    match lua
-        .globals()
-        .get::<LuaTable>("PELICAN")?
-        .get::<LuaValue>("logger_level")
-    {
-        Ok(level) => lua.from_value::<LevelFilter>(level),
-        Err(_) => Ok(LevelFilter::Info),
-    }
 }

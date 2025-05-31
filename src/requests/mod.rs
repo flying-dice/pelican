@@ -8,10 +8,10 @@ use http_header_map::HttpHeaderMap;
 use http_response::HttpResponse;
 use log::info;
 use mlua::prelude::{LuaMultiValue, LuaResult, LuaTable, LuaValue};
-use mlua::{IntoLuaMulti, Lua, Result};
+use mlua::{IntoLuaMulti, Lua};
 use reqwest::blocking::Response;
 
-pub fn inject_module(lua: &Lua, table: &LuaTable) -> Result<()> {
+pub fn inject_module(lua: &Lua, table: &LuaTable) -> LuaResult<()> {
     let m = lua.create_table()?;
 
     m.set(
