@@ -1,0 +1,21 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Debug" type="lua.emmy.debugger" factoryName="Emmy Debugger(NEW)">
+    <module name="json-rpc-server" />
+    <option name="TYPE" value="0" />
+    <option name="HOST" value="localhost" />
+    <option name="PORT" value="9966" />
+    <option name="PIPE" value="emmy" />
+    <option name="WIN_ARCH" value="1" />
+    <method v="2">
+      <option name="NpmBeforeRunTask" enabled="true">
+        <package-json value="$PROJECT_DIR$/tstl/package.json" />
+        <command value="run" />
+        <scripts>
+          <script value="test" />
+        </scripts>
+        <node-interpreter value="project" />
+        <envs />
+      </option>
+    </method>
+  </configuration>
+</component>

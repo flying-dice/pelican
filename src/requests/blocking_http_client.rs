@@ -1,5 +1,5 @@
-use crate::requests;
 use crate::requests::http_request_options::HttpRequestOptions;
+use crate::requests::http_response::HttpResponse;
 use log::info;
 use mlua::Error::RuntimeError;
 use mlua::{
@@ -28,7 +28,7 @@ impl BlockingHttpClient {
     ) -> LuaResult<LuaMultiValue> {
         info!("GET {}", url);
         match send_request(self.client.get(&url), options) {
-            Ok(response) => requests::map_blocking_response(response).into_lua_multi(lua),
+            Ok(response) => HttpResponse::from_response(response).into_lua_multi(lua),
             Err(e) => (LuaValue::Nil, e.to_string()).into_lua_multi(lua),
         }
     }
@@ -42,7 +42,7 @@ impl BlockingHttpClient {
     ) -> LuaResult<LuaMultiValue> {
         info!("POST {}", url);
         match send_request(self.client.post(&url).body(body), options) {
-            Ok(response) => requests::map_blocking_response(response).into_lua_multi(lua),
+            Ok(response) => HttpResponse::from_response(response).into_lua_multi(lua),
             Err(e) => (LuaValue::Nil, e.to_string()).into_lua_multi(lua),
         }
     }
@@ -56,7 +56,7 @@ impl BlockingHttpClient {
     ) -> LuaResult<LuaMultiValue> {
         info!("PUT {}", url);
         match send_request(self.client.put(&url).body(body), options) {
-            Ok(response) => requests::map_blocking_response(response).into_lua_multi(lua),
+            Ok(response) => HttpResponse::from_response(response).into_lua_multi(lua),
             Err(e) => (LuaValue::Nil, e.to_string()).into_lua_multi(lua),
         }
     }
@@ -69,7 +69,7 @@ impl BlockingHttpClient {
     ) -> LuaResult<LuaMultiValue> {
         info!("DELETE {}", url);
         match send_request(self.client.delete(&url), options) {
-            Ok(response) => requests::map_blocking_response(response).into_lua_multi(lua),
+            Ok(response) => HttpResponse::from_response(response).into_lua_multi(lua),
             Err(e) => (LuaValue::Nil, e.to_string()).into_lua_multi(lua),
         }
     }

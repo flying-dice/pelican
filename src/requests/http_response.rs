@@ -4,6 +4,7 @@ use mlua::{
     ExternalError, Lua, LuaSerdeExt, Result as LuaResult, UserData, UserDataMethods,
     Value as LuaValue,
 };
+use reqwest::blocking::Response;
 use serde_json::{from_str, Value};
 
 pub struct HttpResponse {
@@ -13,12 +14,19 @@ pub struct HttpResponse {
 }
 
 impl HttpResponse {
-    pub(crate) fn new(status: u16, headers: HttpHeaderMap, body: String) -> Self {
+    fn new(status: u16, headers: HttpHeaderMap, body: String) -> Self {
         Self {
             status,
             headers,
             body,
         }
+    }
+
+    pub(crate) fn from_response(response: Response) -> HttpResponse {
+        let status = response.status().as_u16();
+        let headers = response.headers().clone();
+        let body = response.text().unwrap();
+        HttpResponse::new(status, HttpHeaderMap(headers), body)
     }
 
     fn get_status(&self, _lua: &Lua) -> mlua::Result<u16> {
@@ -29,7 +37,7 @@ impl HttpResponse {
         Ok(self.headers.clone())
     }
 
-    fn get_header_value(&self, lua: &Lua, key: String) -> LuaResult<String> {
+    fn get_header_value(&self, _lua: &Lua, key: String) -> LuaResult<String> {
         match self.headers.0.get(key.as_str()) {
             Some(value) => value
                 .to_str()

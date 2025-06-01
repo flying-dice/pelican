@@ -6,7 +6,7 @@
     "build": "tstl",
     "build:docs": "npx typedoc --entryPointStrategy Expand types",
     "dev": "tstl --watch",
-    "test": "\"\"C:\\Program Files\\lua-5.1.5_Win64_bin\\lua5.1.exe\"\" tests/index.lua",
+    "test": "\"\"C:\\lua\\lua-5.1.5_Win64_bin\\lua5.1.exe\"\" tests/index.lua",
     "posttest": "npm run build:docs",
     "fmt": "prettier --write \"**/*.{ts,js}\" \"**/*.md\" && node fmt.js"
   },

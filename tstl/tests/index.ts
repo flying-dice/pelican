@@ -7,7 +7,12 @@ print("========== Running Lua Tests ==========");
 // @ts-ignore
 package.cpath = package.cpath + ";..\\target\\debug\\?.dll";
 
+// @ts-ignore
+package.cpath = `${package.cpath};C:/Users/jonat/AppData/Roaming/JetBrains/RustRover2025.1/plugins/EmmyLua/debugger/emmy/windows/x64/?.dll`;
+
 try {
+    // dofile("tests/debugger.lua");
+
     print("========== json ==========");
     dofile("tests/json.test.lua");
     print("\n");

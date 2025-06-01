@@ -1,7 +1,10 @@
---[[ Generated with https://github.com/TypeScriptToLua/TypeScriptToLua ]]
+local ____lualib = require("lualib_bundle")
+local __TS__SourceMapTraceBack = ____lualib.__TS__SourceMapTraceBack
+__TS__SourceMapTraceBack(debug.getinfo(1).short_src, {["4"] = 1,["5"] = 5,["6"] = 8,["7"] = 11,["10"] = 36,["11"] = 37,["14"] = 16,["15"] = 17,["16"] = 18,["17"] = 20,["18"] = 21,["19"] = 22,["20"] = 24,["21"] = 25,["22"] = 26,["23"] = 28,["24"] = 29,["25"] = 30,["26"] = 32,["27"] = 33,["28"] = 34});
 PELICAN = {logger_level = "debug"}
 print("========== Running Lua Tests ==========")
 package.cpath = package.cpath .. ";..\\target\\debug\\?.dll"
+package.cpath = package.cpath .. ";C:/Users/jonat/AppData/Roaming/JetBrains/RustRover2025.1/plugins/EmmyLua/debugger/emmy/windows/x64/?.dll"
 do
     local function ____catch(e)
         print("An error occurred while running tests: " .. tostring(e))
