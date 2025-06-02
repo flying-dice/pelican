@@ -17,6 +17,10 @@ try {
     dofile("tests/json.test.lua");
     print("\n");
 
+    print("========== jsonschema ==========");
+    dofile("tests/jsonschema.test.lua");
+    print("\n");
+
     print("========== logger ==========");
     dofile("tests/logger.test.lua");
     print("\n");

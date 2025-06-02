@@ -1,8 +1,8 @@
 use crate::requests::http_request_options::{HttpRequestOptions, Url};
 use crate::requests::http_response::HttpResponse;
 use log::info;
-use mlua::prelude::LuaNil;
-use mlua::{IntoLuaMulti, Lua, MetaMethod, UserData, UserDataMethods};
+use mlua::prelude::{LuaMetaMethod, LuaNil};
+use mlua::{IntoLuaMulti, Lua, UserData, UserDataMethods};
 use reqwest::blocking::RequestBuilder;
 use reqwest::Error;
 
@@ -52,7 +52,7 @@ impl BlockingHttpClient {
 impl UserData for BlockingHttpClient {
     fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
         methods.add_function("new", |_lua: &Lua, (): ()| Ok(BlockingHttpClient::new()));
-        methods.add_meta_method(MetaMethod::ToString, |_: &Lua, this, (): ()| {
+        methods.add_meta_method(LuaMetaMethod::ToString, |_: &Lua, this, (): ()| {
             Ok(format!("BlockingHttpClient({:p})", this))
         });
 

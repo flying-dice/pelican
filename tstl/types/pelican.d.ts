@@ -26,6 +26,32 @@ declare module "pelican" {
     }
 
     /**
+     * The `json_schema` module provides functions to validate Lua tables against JSON schemas.
+     *
+     * ## TypeScript Example
+     * {@includeCode ../tests/jsonschema.test.ts}
+     *
+     * ## Lua Example
+     * {@includeCode ../tests/jsonschema.test.lua}
+     *
+     * @summary Provides functions for validating Lua tables against JSON schemas.
+     *
+     * @noSelf
+     */
+    declare namespace jsonschema {
+        /**
+         * @customConstructor jsonschema.Validator.new
+         */
+        declare class Validator<T> {
+            static new<T>(this: void, schema: T): Validator<T>;
+
+            constructor(schema: T): Validator<T>;
+
+            validate(data: any): LuaMultiReturn<[boolean, string | undefined]>;
+        }
+    }
+
+    /**
      * The `logger` module provides a simple logging utility for Lua, allowing you to log messages at different levels (debug, info, warn, error).
      *
      * ## TypeScript Example
@@ -39,8 +65,10 @@ declare module "pelican" {
      * @noSelf
      */
     declare namespace logger {
-        /** @customConstructor logger.Logger */
+        /** @customConstructor logger.Logger.new */
         declare class Logger {
+            static new(this: void, namespace: string): Logger;
+
             constructor(namespace: string);
 
             debug(message: string): void;
@@ -59,8 +87,6 @@ declare module "pelican" {
         declare function warn(message: string): void;
 
         declare function error(message: string): void;
-
-        declare function Logger(namespace: string): Logger;
     }
 
     /**
@@ -95,7 +121,7 @@ declare module "pelican" {
 
         /** @customConstructor requests.BlockingHttpClient:new */
         declare class BlockingHttpClient {
-            static new(): BlockingHttpClient;
+            static new(this: void): BlockingHttpClient;
 
             get(url: string, options?: HttpRequestOptions): LuaMultiReturn<[HttpResponse, string | undefined]>;
 

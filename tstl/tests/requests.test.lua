@@ -35,7 +35,7 @@ describe(
         describe(
             "BlockingHttpClient",
             function()
-                local client = requests.BlockingHttpClient:new()
+                local client = requests.BlockingHttpClient.new()
                 it(
                     "should make a GET request using the client (with no headers) and return the response",
                     function()
