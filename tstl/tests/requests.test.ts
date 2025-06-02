@@ -46,21 +46,19 @@ describe("requests", () => {
         });
 
         it("should make a POST request using the client and return the response", () => {
-            const [response, err] = client.post(
-                "https://jsonplaceholder.typicode.com/posts",
-                json.encode({ title: "foo", body: "bar", userId: 1 }),
-                { headers: { "Content-Type": "application/json" } },
-            );
+            const [body] = json.encode({ title: "foo", body: "bar", userId: 1 });
+            const [response, err] = client.post("https://jsonplaceholder.typicode.com/posts", body, {
+                headers: { "Content-Type": "application/json" },
+            });
             expect.equal(err, null);
             expect.equal(response.get_status(), 201);
         });
 
         it("should make a PUT request using the client and return the response", () => {
-            const [response, err] = client.put(
-                "https://jsonplaceholder.typicode.com/posts/1",
-                json.encode({ id: 1, title: "updated title", body: "updated body", userId: 1 }),
-                { headers: { "Content-Type": "application/json" } },
-            );
+            const [body] = json.encode({ id: 1, title: "updated title", body: "updated body", userId: 1 });
+            const [response, err] = client.put("https://jsonplaceholder.typicode.com/posts/1", body, {
+                headers: { "Content-Type": "application/json" },
+            });
             expect.equal(err, null);
             expect.equal(response.get_status(), 200);
         });
@@ -75,11 +73,23 @@ describe("requests", () => {
             try {
                 // @ts-ignore
                 client.get("https://jsonplaceholder.typicode.com/posts/1", { headers: 1 });
-                expect.equal(true, false); // should not reach here
+                assert(false, "Expected an error to be thrown for invalid headers");
             } catch (e) {
                 expect.equal(
                     `${string.match(`${e}`, "([^\r\n]+)")[0]}`,
                     "bad argument #3 to `BlockingHttpClient.get`: invalid type: integer `1`, expected a map",
+                );
+            }
+        });
+
+        it("should raise runtime error for invalid URL pattern", () => {
+            try {
+                client.get("invalid-url");
+                assert(false, "Expected an error to be thrown for invalid URL");
+            } catch (e) {
+                expect.equal(
+                    `${string.match(`${e}`, "([^\r\n]+)")[0]}`,
+                    "bad argument #2 to `BlockingHttpClient.get`: relative URL without a base",
                 );
             }
         });

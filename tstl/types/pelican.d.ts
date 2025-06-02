@@ -20,9 +20,9 @@ declare module "pelican" {
      * @noSelf
      */
     declare namespace json {
-        declare function encode(value: any): string;
+        declare function encode<T = any>(value: T): LuaMultiReturn<[string, string | undefined]>;
 
-        declare function decode(json: string): any;
+        declare function decode<T = any>(json: string): LuaMultiReturn<[T, string | undefined]>;
     }
 
     /**

@@ -9,14 +9,16 @@
 json = {}
 
 --- Encodes a Lua value into a JSON string.
----@param value any
----@return string
+---@generic T
+---@param value T
+---@return string, string|nil
 function json.encode(value)
 end
 
 --- Decodes a JSON string into a Lua value.
+---@generic T
 ---@param json string
----@return any
+---@return T, string|nil
 function json.decode(json)
 end
 

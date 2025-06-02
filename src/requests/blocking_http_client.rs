@@ -1,115 +1,100 @@
-use crate::requests::http_request_options::HttpRequestOptions;
+use crate::requests::http_request_options::{HttpRequestOptions, Url};
 use crate::requests::http_response::HttpResponse;
 use log::info;
-use mlua::Error::RuntimeError;
-use mlua::{
-    IntoLuaMulti, Lua, MultiValue as LuaMultiValue, Result as LuaResult, UserData, UserDataMethods,
-    Value as LuaValue,
-};
-use reqwest::blocking::{RequestBuilder, Response};
+use mlua::prelude::LuaNil;
+use mlua::{IntoLuaMulti, Lua, MetaMethod, UserData, UserDataMethods};
+use reqwest::blocking::RequestBuilder;
+use reqwest::Error;
 
 pub struct BlockingHttpClient {
     client: reqwest::blocking::Client,
 }
 
 impl BlockingHttpClient {
-    fn new() -> LuaResult<BlockingHttpClient> {
+    fn new() -> BlockingHttpClient {
         info!("Creating new BlockingHttpClient");
-        Ok(Self {
+        Self {
             client: reqwest::blocking::Client::new(),
-        })
+        }
     }
 
-    fn get(
-        &self,
-        lua: &Lua,
-        url: String,
-        options: Option<HttpRequestOptions>,
-    ) -> LuaResult<LuaMultiValue> {
-        info!("GET {}", url);
-        match send_request(self.client.get(&url), options) {
-            Ok(response) => HttpResponse::from_response(response).into_lua_multi(lua),
-            Err(e) => (LuaValue::Nil, e.to_string()).into_lua_multi(lua),
-        }
+    fn get(&self, url: Url, options: Option<HttpRequestOptions>) -> Result<HttpResponse, Error> {
+        info!("GET {:?}", url);
+        send_request(self.client.get(url.0), options)
     }
 
     fn post(
         &self,
-        lua: &Lua,
-        url: String,
+        url: Url,
         body: String,
         options: Option<HttpRequestOptions>,
-    ) -> LuaResult<LuaMultiValue> {
-        info!("POST {}", url);
-        match send_request(self.client.post(&url).body(body), options) {
-            Ok(response) => HttpResponse::from_response(response).into_lua_multi(lua),
-            Err(e) => (LuaValue::Nil, e.to_string()).into_lua_multi(lua),
-        }
+    ) -> Result<HttpResponse, Error> {
+        info!("POST {:?}", url);
+        send_request(self.client.post(url.0).body(body), options)
     }
 
     fn put(
         &self,
-        lua: &Lua,
-        url: String,
+        url: Url,
         body: String,
         options: Option<HttpRequestOptions>,
-    ) -> LuaResult<LuaMultiValue> {
-        info!("PUT {}", url);
-        match send_request(self.client.put(&url).body(body), options) {
-            Ok(response) => HttpResponse::from_response(response).into_lua_multi(lua),
-            Err(e) => (LuaValue::Nil, e.to_string()).into_lua_multi(lua),
-        }
+    ) -> Result<HttpResponse, Error> {
+        info!("PUT {:?}", url);
+        send_request(self.client.put(url.0).body(body), options)
     }
 
-    fn delete(
-        &self,
-        lua: &Lua,
-        url: String,
-        options: Option<HttpRequestOptions>,
-    ) -> LuaResult<LuaMultiValue> {
-        info!("DELETE {}", url);
-        match send_request(self.client.delete(&url), options) {
-            Ok(response) => HttpResponse::from_response(response).into_lua_multi(lua),
-            Err(e) => (LuaValue::Nil, e.to_string()).into_lua_multi(lua),
-        }
+    fn delete(&self, url: Url, options: Option<HttpRequestOptions>) -> Result<HttpResponse, Error> {
+        info!("DELETE {:?}", url);
+        send_request(self.client.delete(url.0), options)
     }
 }
 
 impl UserData for BlockingHttpClient {
     fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
-        methods.add_function("new", |_lua: &Lua, (): ()| BlockingHttpClient::new());
+        methods.add_function("new", |_lua: &Lua, (): ()| Ok(BlockingHttpClient::new()));
+        methods.add_meta_method(MetaMethod::ToString, |_: &Lua, this, (): ()| {
+            Ok(format!("BlockingHttpClient({:p})", this))
+        });
 
         methods.add_method(
             "get",
             |lua: &Lua,
              this: &BlockingHttpClient,
-             (url, options): (String, Option<HttpRequestOptions>)| {
-                this.get(lua, url, options)
+             (url, options): (Url, Option<HttpRequestOptions>)| {
+                match this.get(url, options) {
+                    Ok(response) => response.into_lua_multi(lua),
+                    Err(e) => (LuaNil, e.to_string()).into_lua_multi(lua),
+                }
             },
         );
 
         methods.add_method(
             "post",
-            |lua: &Lua,
-             this,
-             (url, body, options): (String, String, Option<HttpRequestOptions>)| {
-                this.post(lua, url, body, options)
+            |_lua: &Lua, this, (url, body, options): (Url, String, Option<HttpRequestOptions>)| {
+                match this.post(url, body, options) {
+                    Ok(response) => response.into_lua_multi(_lua),
+                    Err(e) => (LuaNil, e.to_string()).into_lua_multi(_lua),
+                }
             },
         );
 
         methods.add_method(
             "put",
-            |lua: &Lua,
-             this,
-             (url, body, options): (String, String, Option<HttpRequestOptions>)| {
-                this.put(lua, url, body, options)
+            |_lua: &Lua, this, (url, body, options): (Url, String, Option<HttpRequestOptions>)| {
+                match this.put(url, body, options) {
+                    Ok(response) => response.into_lua_multi(_lua),
+                    Err(e) => (LuaNil, e.to_string()).into_lua_multi(_lua),
+                }
             },
         );
 
         methods.add_method(
             "delete",
-            |lua: &Lua, this, (url, options): (String, Option<HttpRequestOptions>)| {
-                this.delete(lua, url, options)
+            |_lua: &Lua, this, (url, options): (Url, Option<HttpRequestOptions>)| match this
+                .delete(url, options)
+            {
+                Ok(response) => response.into_lua_multi(_lua),
+                Err(e) => (LuaNil, e.to_string()).into_lua_multi(_lua),
             },
         );
     }
@@ -118,7 +103,7 @@ impl UserData for BlockingHttpClient {
 fn send_request(
     builder: RequestBuilder,
     options: Option<HttpRequestOptions>,
-) -> mlua::Result<Response> {
+) -> Result<HttpResponse, Error> {
     let mut builder = builder;
 
     if let Some(options) = options {
@@ -133,5 +118,5 @@ fn send_request(
         }
     }
 
-    builder.send().map_err(|e| RuntimeError(e.to_string()))
+    builder.send().map(HttpResponse::from_response)
 }

@@ -1,4 +1,4 @@
-use crate::requests::http_header_map::HttpHeaderMap;
+use crate::requests::http_request_options::HttpHeaderMap;
 use mlua::Error::RuntimeError;
 use mlua::{
     ExternalError, Lua, LuaSerdeExt, Result as LuaResult, UserData, UserDataMethods,

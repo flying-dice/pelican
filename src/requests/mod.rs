@@ -1,13 +1,14 @@
 mod blocking_http_client;
-mod http_header_map;
 mod http_request_options;
 mod http_response;
 
+use crate::requests::http_request_options::Url;
 use blocking_http_client::BlockingHttpClient;
 use http_response::HttpResponse;
 use log::info;
-use mlua::prelude::{LuaMultiValue, LuaResult, LuaTable, LuaValue};
+use mlua::prelude::{LuaNil, LuaResult, LuaTable};
 use mlua::{IntoLuaMulti, Lua};
+use reqwest::Error;
 
 pub fn inject_module(lua: &Lua, table: &LuaTable) -> LuaResult<()> {
     let m = lua.create_table()?;
@@ -19,17 +20,17 @@ pub fn inject_module(lua: &Lua, table: &LuaTable) -> LuaResult<()> {
 
     m.set(
         "get",
-        lua.create_function(|lua: &Lua, url: String| get(lua, url))?,
+        lua.create_function(|lua: &Lua, url: Url| match get(lua, url) {
+            Ok(response) => response.into_lua_multi(lua),
+            Err(e) => (LuaNil, e.to_string()).into_lua_multi(lua),
+        })?,
     )?;
 
     table.set("requests", m)?;
     Ok(())
 }
 
-fn get(lua: &Lua, url: String) -> LuaResult<LuaMultiValue> {
-    info!("GET {}", url);
-    match reqwest::blocking::get(&url) {
-        Ok(response) => HttpResponse::from_response(response).into_lua_multi(lua),
-        Err(e) => (LuaValue::Nil, e.to_string()).into_lua_multi(lua),
-    }
+fn get(_lua: &Lua, url: Url) -> Result<HttpResponse, Error> {
+    info!("GET {:?}", url);
+    reqwest::blocking::get(url.0).map(HttpResponse::from_response)
 }
