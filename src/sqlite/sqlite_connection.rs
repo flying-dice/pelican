@@ -1,35 +1,37 @@
 use log::debug;
-use mlua::prelude::{LuaResult, LuaTable, LuaValue};
-use mlua::{ExternalError, IntoLuaMulti, Lua, Result, UserData, UserDataMethods, Value};
-use sqlite::State;
-use sqlite::{Connection, Statement};
+use mlua::prelude::LuaError;
+use mlua::{
+    ExternalError, IntoLuaMulti, Lua, MetaMethod, Table as LuaTable, UserData, UserDataMethods,
+    Value as LuaValue, Value,
+};
+use sqlite::{Connection, Error, State, Statement};
 
-pub fn inject_module(lua: &Lua, table: &LuaTable) -> Result<()> {
-    let m = lua.create_table()?;
-
-    m.set("open", lua.create_function(open)?)?;
-
-    table.set("sqlite", m)?;
-
-    Ok(())
-}
-
-struct _SqliteConnection {
+pub struct _SQLiteConnection {
     connection: Connection,
+    path: String,
 }
 
-impl _SqliteConnection {
-    fn new(path: String) -> LuaResult<_SqliteConnection> {
-        let connection = sqlite::open(path).map_err(|e| {
-            debug!("Failed to open SQLite connection: {}", e);
-            format!("SQLite error: {}", e).into_lua_err()
-        })?;
-        Ok(Self { connection })
+impl _SQLiteConnection {
+    fn new(path: String) -> Result<_SQLiteConnection, Error> {
+        let connection = sqlite::open(path.clone())?;
+        Ok(Self { connection, path })
     }
 }
 
-impl UserData for _SqliteConnection {
+impl UserData for _SQLiteConnection {
     fn add_methods<'lua, M: UserDataMethods<Self>>(methods: &mut M) {
+        methods.add_function("new", |lua, path: String| {
+            debug!("Opening SQLite connection to {}", path);
+            _SQLiteConnection::new(path)
+                .map_err(LuaError::external)
+                .into_lua_multi(lua)
+        });
+
+        methods.add_meta_method(MetaMethod::ToString, |_, this, (): ()| {
+            debug!("Converting SQLite connection to string: {}", this.path);
+            Ok(format!("SQLiteConnection({})", this.path))
+        });
+
         methods.add_method("exec", |lua, this, query: String| {
             match this.connection.execute(query) {
                 Ok(_) => true.into_lua_multi(lua),
@@ -67,9 +69,6 @@ impl UserData for _SqliteConnection {
         );
     }
 }
-fn open(_: &Lua, path: String) -> Result<_SqliteConnection> {
-    _SqliteConnection::new(path)
-}
 
 /**
  * Prepare a statement for execution.
@@ -80,7 +79,7 @@ fn prepare_statement(
     conn: &Connection,
     query: String,
     params: Option<LuaTable>,
-) -> Result<Statement> {
+) -> mlua::Result<Statement> {
     debug!("Preparing query: {}", query);
     let mut statement = conn.prepare(query).map_err(|e| {
         debug!("Failed to prepare statement: {}", e);
@@ -99,7 +98,7 @@ fn prepare_statement(
  * Bind parameters to a statement from a Lua table.
  * This function checks if the table is an array or a named parameter table.
  */
-fn bind_params(statement: &mut Statement, params: LuaTable) -> Result<()> {
+fn bind_params(statement: &mut Statement, params: LuaTable) -> mlua::Result<()> {
     if is_lua_array(&params)? {
         bind_array_params(statement, params)
     } else {
@@ -110,7 +109,7 @@ fn bind_params(statement: &mut Statement, params: LuaTable) -> Result<()> {
 /**
  * Check if a Lua table is an array by checking if it has contiguous integer keys starting from 1.
  */
-fn is_lua_array(table: &LuaTable) -> Result<bool> {
+fn is_lua_array(table: &LuaTable) -> mlua::Result<bool> {
     let mut last_index = 0;
 
     for pair in table.pairs::<LuaValue, LuaValue>() {
@@ -135,7 +134,7 @@ fn is_lua_array(table: &LuaTable) -> Result<bool> {
  * Bind parameters to a statement from a Lua table.
  * This function assumes that the table contains integer keys starting from 1.
  */
-fn bind_array_params(statement: &mut Statement, params: LuaTable) -> Result<()> {
+fn bind_array_params(statement: &mut Statement, params: LuaTable) -> mlua::Result<()> {
     for entry in params.pairs::<usize, LuaValue>() {
         match entry {
             Ok((index, param)) => {
@@ -160,7 +159,7 @@ fn bind_array_params(statement: &mut Statement, params: LuaTable) -> Result<()> 
  * Bind parameters to a statement from a Lua table.
  * This function assumes that the table contains string keys.
  */
-fn bind_named_params(statement: &mut Statement, params: LuaTable) -> Result<()> {
+fn bind_named_params(statement: &mut Statement, params: LuaTable) -> mlua::Result<()> {
     for entry in params.pairs::<String, LuaValue>() {
         match entry {
             Ok((key, param)) => {
@@ -184,7 +183,7 @@ fn bind_named_params(statement: &mut Statement, params: LuaTable) -> Result<()> 
 /**
 * Convert a Lua value to an SQLite value for binding.
 */
-fn to_bindable_value(value: LuaValue) -> Result<sqlite::Value> {
+fn to_bindable_value(value: LuaValue) -> mlua::Result<sqlite::Value> {
     match value {
         LuaValue::Nil => Ok(sqlite::Value::Null),
         LuaValue::Integer(v) => Ok(sqlite::Value::Integer(v)),
@@ -201,7 +200,7 @@ fn to_bindable_value(value: LuaValue) -> Result<sqlite::Value> {
  * Execute a query and return the result as a Lua table.
  * This function takes a Lua state, a statement, and returns a Lua table.
  */
-fn execute_and_map_result(lua: &Lua, statement: &mut Statement) -> Result<LuaTable> {
+fn execute_and_map_result(lua: &Lua, statement: &mut Statement) -> mlua::Result<LuaTable> {
     let result_table = lua.create_table().expect("Failed to create result table");
     let mut row_index = 1;
 

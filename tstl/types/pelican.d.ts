@@ -156,13 +156,18 @@ declare module "pelican" {
      * @noSelf
      */
     declare namespace sqlite {
-        declare class SqliteConnection {
+        /**
+         * @customConstructor sqlite.SQLiteConnection.new
+         */
+        declare class SQLiteConnection {
+            static new(this: void, path: string): SQLiteConnection;
+
+            constructor(path: string);
+
             exec(sql: string): LuaMultiReturn<[boolean, string | undefined]>;
 
             execute<T = any, P = any>(sql: string, params?: P): LuaMultiReturn<[T[], string | undefined]>;
         }
-
-        declare function open(path: string): SqliteConnection;
     }
 
     /**

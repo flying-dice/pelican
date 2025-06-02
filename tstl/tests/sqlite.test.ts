@@ -7,8 +7,15 @@ type User = {
     age: number;
 };
 
-describe("sqlite module", () => {
-    const connection = sqlite.open(":memory:");
+describe("sqlite", () => {
+    describe("SQLiteConnection", () => {
+        it("should instantiate using the new keyword", () => {
+            const connection = sqlite.SQLiteConnection.new(":memory:");
+            expect.equal(tostring(connection), "SQLiteConnection(:memory:)");
+        });
+    });
+
+    const connection = sqlite.SQLiteConnection.new(":memory:");
     connection.exec(
         "CREATE TABLE IF NOT EXISTS users(id   INTEGER PRIMARY KEY, name TEXT UNIQUE, age  INTEGER CHECK ( typeof(age) = 'integer'));",
     );
