@@ -1,5 +1,5 @@
 //! Lua module for generating UUIDs
-use mlua::prelude::LuaTable;
+use mlua::prelude::{LuaResult, LuaTable};
 use mlua::{Lua, Result};
 use uuid::Uuid;
 
@@ -14,12 +14,12 @@ pub fn inject_module(lua: &Lua, table: &LuaTable) -> Result<()> {
     Ok(())
 }
 
-fn v4(_: &Lua, (): ()) -> Result<String> {
+fn v4(_: &Lua, (): ()) -> LuaResult<String> {
     let uuid = Uuid::new_v4();
     Ok(uuid.to_string())
 }
 
-fn v7(_: &Lua, (): ()) -> Result<String> {
+fn v7(_: &Lua, (): ()) -> LuaResult<String> {
     let uuid = Uuid::now_v7();
     Ok(uuid.to_string())
 }

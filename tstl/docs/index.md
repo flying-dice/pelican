@@ -20,9 +20,9 @@ Pelican is distributed as a `DLL` file. To install:
 
 1. Place the DLL into the following directory:
 
-   ```
-   %USERPROFILE%\Saved Games\DCS\Mods\tech\Pelican\bin
-   ```
+    ```
+    %USERPROFILE%\Saved Games\DCS\Mods\tech\Pelican\bin
+    ```
 
 2. Replace `Pelican` with the actual name of your mod if you want to isolate it from other usages, i.e. for Version
    Pinning

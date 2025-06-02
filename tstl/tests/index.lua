@@ -1,6 +1,4 @@
-local ____lualib = require("lualib_bundle")
-local __TS__SourceMapTraceBack = ____lualib.__TS__SourceMapTraceBack
-__TS__SourceMapTraceBack(debug.getinfo(1).short_src, {["4"] = 1,["5"] = 5,["6"] = 8,["7"] = 11,["10"] = 40,["11"] = 41,["14"] = 16,["15"] = 17,["16"] = 18,["17"] = 20,["18"] = 21,["19"] = 22,["20"] = 24,["21"] = 25,["22"] = 26,["23"] = 28,["24"] = 29,["25"] = 30,["26"] = 32,["27"] = 33,["28"] = 34,["29"] = 36,["30"] = 37,["31"] = 38});
+--[[ Generated with https://github.com/TypeScriptToLua/TypeScriptToLua ]]
 PELICAN = {logger_level = "debug"}
 print("========== Running Lua Tests ==========")
 package.cpath = package.cpath .. ";..\\target\\debug\\?.dll"
@@ -28,6 +26,9 @@ do
         print("\n")
         print("========== uuid ==========")
         dofile("tests/uuid.test.lua")
+        print("\n")
+        print("========== web ==========")
+        dofile("tests/web.test.lua")
         print("\n")
     end)
     if not ____try then

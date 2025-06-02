@@ -1,6 +1,4 @@
-local ____lualib = require("lualib_bundle")
-local __TS__SourceMapTraceBack = ____lualib.__TS__SourceMapTraceBack
-__TS__SourceMapTraceBack(debug.getinfo(1).short_src, {["5"] = 1,["6"] = 1,["7"] = 1,["8"] = 3,["9"] = 4,["10"] = 6,["11"] = 7});
+--[[ Generated with https://github.com/TypeScriptToLua/TypeScriptToLua ]]
 local ____exports = {}
 local ____emmy_core = require("emmy_core")
 local tcpListen = ____emmy_core.tcpListen

@@ -188,4 +188,26 @@ declare module "pelican" {
 
         declare function v7(): string;
     }
+
+    /**
+     * @noSelf
+     */
+    declare namespace web {
+        declare type ServerOptions = {
+            port: number;
+            host: string;
+        };
+
+        declare class Server {
+            process_rpc(router: Router): void;
+        }
+
+        declare class Router {
+            add_method(method_name: string, handler: (props: any) => any): void;
+        }
+
+        declare function serve(options: ServerOptions): Server;
+
+        declare function router(): Router;
+    }
 }

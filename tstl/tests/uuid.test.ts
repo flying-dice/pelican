@@ -1,5 +1,5 @@
-import {uuid} from "pelican";
-import {describe, expect, it} from "lester";
+import { uuid } from "pelican";
+import { describe, expect, it } from "lester";
 
 describe("uuid", () => {
     it("should produce a valid uuid V4", () => {

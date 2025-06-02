@@ -36,6 +36,10 @@ try {
     print("========== uuid ==========");
     dofile("tests/uuid.test.lua");
     print("\n");
+
+    print("========== web ==========");
+    dofile("tests/web.test.lua");
+    print("\n");
 } catch (e) {
     print(`An error occurred while running tests: ${e}`);
     print(debug.traceback());

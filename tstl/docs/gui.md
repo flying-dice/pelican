@@ -49,11 +49,11 @@ curl --location 'http://localhost:1234/rpc' \
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": "1",
-  "result": {
-    "message": "pong 1"
-  }
+    "jsonrpc": "2.0",
+    "id": "1",
+    "result": {
+        "message": "pong 1"
+    }
 }
 ```
 
