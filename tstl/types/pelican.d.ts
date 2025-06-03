@@ -192,6 +192,14 @@ declare module "pelican" {
     }
 
     /**
+     * The `jsonrpc` module provides a JSON-RPC server and router for handling JSON-RPC requests.
+     *
+     * ## TypeScript Example
+     * {@includeCode ../server/jsonrpc.server.ts}
+     *
+     * ## Lua Example
+     * {@includeCode ../server/jsonrpc.server.lua}
+     *
      * @noSelf
      */
     declare namespace jsonrpc {
