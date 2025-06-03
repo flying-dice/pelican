@@ -27,9 +27,6 @@ do
         print("========== uuid ==========")
         dofile("tests/uuid.test.lua")
         print("\n")
-        print("========== web ==========")
-        dofile("tests/web.test.lua")
-        print("\n")
     end)
     if not ____try then
         ____catch(____hasReturned)

@@ -1,0 +1,17 @@
+{
+    "$schema": "https://raw.githubusercontent.com/TypeScriptToLua/TypeScriptToLua/master/tsconfig-schema.json",
+    "include": [
+        "tests-e2e/**/*"
+    ],
+    "compilerOptions": {
+        "target": "ES6",
+        "lib": [
+            "ES6"
+        ],
+        "moduleResolution": "Node",
+        "strict": true,
+        "declaration": false,
+        "esModuleInterop": true,
+        "skipLibCheck": true
+    }
+}

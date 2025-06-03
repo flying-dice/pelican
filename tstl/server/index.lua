@@ -7,7 +7,7 @@ do
     end
     local ____try, ____hasReturned = pcall(function()
         print("========== server ==========")
-        dofile("tests/jsonrpc.server.lua")
+        dofile("server/jsonrpc.server.lua")
         print("\n")
     end)
     if not ____try then

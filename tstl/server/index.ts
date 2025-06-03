@@ -3,7 +3,7 @@ package.cpath = package.cpath + ";..\\target\\debug\\?.dll";
 
 try {
     print("========== server ==========");
-    dofile("tests/jsonrpc.server.lua");
+    dofile("server/jsonrpc.server.lua");
     print("\n");
 } catch (e) {
     print(`An error occurred while running tests: ${e}`);

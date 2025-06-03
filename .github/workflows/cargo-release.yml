@@ -43,5 +43,5 @@ jobs:
         run: cargo build
 
       - name: Test
-        run: lua ltests/test.lua
+        run: lua tests/index.lua
         continue-on-error: true

@@ -3,22 +3,24 @@
     "version": "0.0.3",
     "description": "",
     "scripts": {
-        "build": "tstl",
+        "build": "tstl --project tsconfig.tstl.json",
         "build:docs": "npx typedoc --entryPointStrategy Expand types",
-        "dev": "tstl --watch",
-        "test": "concurrently --kill-others \"lua server/index.lua\" \"lua tests/index.lua\"",
+        "test": "lua tests/index.lua",
+        "test:e2e": "concurrently --kill-others \"lua server/index.lua\" \"vitest tests-e2e\"",
         "posttest": "npm run build:docs",
         "fmt": "prettier --write \"**/*.{ts,js}\" \"**/*.md\" && node fmt.js"
     },
     "author": "Flying Dice",
     "license": "ISC",
     "devDependencies": {
+        "axios": "^1.9.0",
         "concurrently": "^9.1.2",
         "lua-fmt": "^2.6.0",
         "lua-types": "^2.13.1",
         "prettier": "^3.5.3",
         "typedoc": "^0.28.5",
-        "typescript": "^5.8.3",
-        "typescript-to-lua": "^1.31.1"
+        "typescript": "5.8.2",
+        "typescript-to-lua": "^1.31.1",
+        "vitest": "^3.2.0"
     }
 }
