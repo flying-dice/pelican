@@ -9,7 +9,7 @@ describe("jsonrpc", () => {
             expect(response.status).toBe(200);
             expect(response.data).toEqual({
                 name: "pelican",
-                version: "0.3.0",
+                version: "0.0.4",
                 status: "OK",
             });
         });

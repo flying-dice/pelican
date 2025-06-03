@@ -278,7 +278,7 @@ async fn get_health() -> Json<Health> {
     let health = Health {
         name: "pelican".to_string(),
         status: "OK".to_string(),
-        version: "0.3.0".to_string(),
+        version: "0.0.4".to_string(),
     };
 
     Json(health)
