@@ -1,7 +1,8 @@
 import { web } from "pelican";
+import { add_users } from "./users";
 
 PELICAN = {
-    logger_level: "debug",
+    logger_level: "error",
 };
 
 const server = web.serve({
@@ -11,6 +12,7 @@ const server = web.serve({
 
 const router = web.router();
 
+add_users(router);
 router.add_method("ping", (props: { message: string }) => {
     return `Pong, ${props.message}!`;
 });

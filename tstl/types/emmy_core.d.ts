@@ -1,4 +1,5 @@
 /**
+ * @hidden
  * @module
  */
 declare module "emmy_core" {

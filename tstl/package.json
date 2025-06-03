@@ -2,11 +2,16 @@
     "name": "pelican",
     "version": "0.0.3",
     "description": "",
+    "engines": {
+        "node": ">=22"
+    },
     "scripts": {
         "build": "tstl --project tsconfig.tstl.json",
         "build:docs": "npx typedoc --entryPointStrategy Expand types",
         "test": "lua tests/index.lua",
         "test:e2e": "concurrently --kill-others \"lua server/index.lua\" \"vitest tests-e2e\"",
+        "test:load": "k6 run script.http.js --vus 10 --duration 30s > script.http.results",
+        "serve": "lua server/index.lua",
         "posttest": "npm run build:docs",
         "fmt": "prettier --write \"**/*.{ts,js}\" \"**/*.md\" && node fmt.js"
     },

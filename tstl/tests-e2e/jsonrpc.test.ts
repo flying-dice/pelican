@@ -1,59 +1,58 @@
 import { describe, it, expect } from "vitest";
 import axios from "axios";
-
-const rpcClient = axios.create({
-    baseURL: "http://localhost:1234",
-    headers: {
-        "Content-Type": "application/json",
-    },
-    validateStatus: null,
-});
+import * as crypto from "node:crypto";
 
 describe("web", () => {
     describe("http", () => {
+        const httpClient = axios.create({
+            baseURL: "http://localhost:1234",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            validateStatus: null,
+        });
+
         it("should perform rpc request", async () => {
-            const messageId = crypto.randomUUID();
-            const body = {
+            const rpcRequest = {
                 jsonrpc: "2.0",
                 method: "ping",
                 params: { message: "World" },
-                id: messageId,
+                id: crypto.randomUUID(),
             };
 
-            const response = await rpcClient.post("/rpc", body);
+            const response = await httpClient.post("/rpc", rpcRequest);
             expect(response.status).toBe(200);
             expect(response.data).toEqual({
                 jsonrpc: "2.0",
-                id: messageId,
+                id: rpcRequest.id,
                 result: "Pong, World!",
             });
         });
 
         it("should handle notification", () => {
-            const body = {
+            const rpcNotification = {
                 jsonrpc: "2.0",
                 method: "ping",
                 params: { message: "World" },
             };
 
-            return rpcClient.post("/rpc", body).then((response) => {
+            return httpClient.post("/rpc", rpcNotification).then((response) => {
                 expect(response.status).toBe(202);
                 expect(response.data).toEqual("OK");
             });
         });
 
         it("should handle missing method", async () => {
-            const messageId = crypto.randomUUID();
-            const body = {
+            const rpcRequest = {
                 jsonrpc: "2.0",
-                id: messageId,
+                id: crypto.randomUUID(),
                 method: "nonExistentMethod",
             };
-            const response = await rpcClient.post("/rpc", body);
+            const response = await httpClient.post("/rpc", rpcRequest);
             expect(response.status).toBe(200);
             expect(response.data).toEqual({
                 jsonrpc: "2.0",
-                id: messageId,
+                id: rpcRequest.id,
                 error: {
                     code: -32601,
                     message: "Method not found: nonExistentMethod",
@@ -62,20 +61,19 @@ describe("web", () => {
         });
 
         it("should handle server errors", async () => {
-            const messageId = crypto.randomUUID();
-            const body = {
+            const rpcRequest = {
                 jsonrpc: "2.0",
                 method: "throws", // This method is designed to throw an error See server/jsonrpc.server.ts
                 params: [],
-                id: messageId,
+                id: crypto.randomUUID(),
             };
 
             // Simulate a server error by modifying the server to throw an error
-            const response = await rpcClient.post("/rpc", body);
+            const response = await httpClient.post("/rpc", rpcRequest);
             expect(response.status).toBe(200);
             expect(response.data).toEqual({
                 jsonrpc: "2.0",
-                id: messageId,
+                id: rpcRequest.id,
                 error: {
                     code: -32603,
                     data: "runtime error: Error: This is an error from the server.",
@@ -85,9 +83,44 @@ describe("web", () => {
         });
 
         it("should handle invalid JSON-RPC request", async () => {
-            const response = await rpcClient.post("/rpc", "Invalid JSON");
+            const response = await httpClient.post("/rpc", "Invalid JSON");
             expect(response.status).toBe(400);
             expect(response.data).toEqual("Failed to parse request");
+        });
+    });
+
+    describe("websocket", () => {
+        it("performs an RPC request over websocket", async () => {
+            const ws = new WebSocket("ws://localhost:1234/ws");
+
+            const rpcRequest = {
+                jsonrpc: "2.0",
+                method: "ping",
+                params: { message: "World" },
+                id: crypto.randomUUID(),
+            };
+
+            const response = await new Promise((resolve, reject) => {
+                ws.onopen = () => {
+                    ws.send(JSON.stringify(rpcRequest));
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        resolve(JSON.parse(event.data));
+                    } catch (err) {
+                        reject(err);
+                    }
+                };
+
+                ws.onerror = (err) => reject(err);
+            });
+
+            expect(response).toMatchObject({
+                jsonrpc: "2.0",
+                id: rpcRequest.id,
+                result: "Pong, World!",
+            });
         });
     });
 });

@@ -19,6 +19,7 @@ use std::thread;
 use std::time::Duration;
 use tokio::runtime::Runtime;
 use tokio::sync::oneshot::Receiver;
+use tokio::task::spawn_local;
 use tokio::time::timeout;
 
 pub fn inject_module(lua: &Lua, table: &LuaTable) -> LuaResult<()> {
@@ -111,47 +112,51 @@ async fn get_ws(
 ) -> actix_web::Result<HttpResponse> {
     let (response, mut session, mut msg_stream) = actix_ws::handle(&req, body)?;
 
-    while let Some(Ok(msg)) = msg_stream.recv().await {
-        match msg {
-            Message::Text(text) => {
-                let message = text.to_string();
+    info!("WebSocket connection established");
 
-                match data.lock() {
-                    Ok(mut data_guard) => {
-                        let response = push_rpc_request(&mut data_guard, &message);
-                        drop(data_guard);
+    spawn_local(async move {
+        while let Some(Ok(msg)) = msg_stream.recv().await {
+            match msg {
+                Message::Text(text) => {
+                    let message = text.to_string();
 
-                        match response {
-                            Ok(Some(receiver)) => {
-                                notify_session(session.clone(), receiver).await.ok();
-                            }
-                            Ok(None) => {
-                                info!("Processed notification: {}", message);
-                            }
-                            Err(e) => match e {
-                                RpcError::ParseError => {
-                                    error!("Failed to parse request: {}", message);
+                    match data.lock() {
+                        Ok(mut data_guard) => {
+                            let response = push_rpc_request(&mut data_guard, &message);
+                            drop(data_guard);
+
+                            match response {
+                                Ok(Some(receiver)) => {
+                                    notify_session(session.clone(), receiver).await.ok();
                                 }
-                            },
+                                Ok(None) => {
+                                    info!("Processed notification: {}", message);
+                                }
+                                Err(e) => match e {
+                                    RpcError::ParseError => {
+                                        error!("Failed to parse request: {}", message);
+                                    }
+                                },
+                            }
+                        }
+                        Err(e) => {
+                            error!("Failed to acquire data lock: {}", e);
                         }
                     }
-                    Err(e) => {
-                        error!("Failed to acquire data lock: {}", e);
+                }
+                Message::Ping(bytes) => {
+                    if session.pong(&bytes).await.is_err() {
+                        error!("Failed to send pong");
                     }
                 }
-            }
-            Message::Ping(bytes) => {
-                if session.pong(&bytes).await.is_err() {
-                    error!("Failed to send pong");
+                Message::Close(reason) => {
+                    let _ = session.close(reason).await;
+                    break;
                 }
+                _ => break,
             }
-            Message::Close(reason) => {
-                let _ = session.close(reason).await;
-                break;
-            }
-            _ => break,
         }
-    }
+    });
 
     Ok(response)
 }
