@@ -123,6 +123,8 @@ declare module "pelican" {
         declare class BlockingHttpClient {
             static new(this: void): BlockingHttpClient;
 
+            constructor(): BlockingHttpClient;
+
             get(url: string, options?: HttpRequestOptions): LuaMultiReturn<[HttpResponse, string | undefined]>;
 
             post(
@@ -192,22 +194,28 @@ declare module "pelican" {
     /**
      * @noSelf
      */
-    declare namespace web {
-        declare type ServerOptions = {
+    declare namespace jsonrpc {
+        declare type JsonRpcServerOptions = {
             port: number;
             host: string;
         };
 
-        declare class Server {
-            process_rpc(router: Router): void;
+        /** @customConstructor jsonrpc.JsonRpcServer.new */
+        declare class JsonRpcServer {
+            static new(this: void, options: JsonRpcServerOptions): JsonRpcServer;
+
+            constructor(options: JsonRpcServerOptions): JsonRpcServer;
+
+            process_rpc(router: JsonRpcRouter): void;
         }
 
-        declare class Router {
-            add_method(method_name: string, handler: (props: any) => any): void;
+        /** @customConstructor jsonrpc.JsonRpcRouter.new */
+        declare class JsonRpcRouter {
+            static new(this: void): JsonRpcRouter;
+
+            constructor(): JsonRpcRouter;
+
+            add_method<PROPS = any, RES = any>(method_name: string, handler: (props: PROPS) => RES): void;
         }
-
-        declare function serve(options: ServerOptions): Server;
-
-        declare function router(): Router;
     }
 }

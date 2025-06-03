@@ -1,4 +1,4 @@
-import { jsonschema, sqlite, web } from "pelican";
+import { jsonschema, sqlite, jsonrpc } from "pelican";
 
 const users_db = new sqlite.SQLiteConnection(":memory:");
 
@@ -20,7 +20,7 @@ const user_validator = new jsonschema.Validator({
     required: ["name", "age"],
 });
 
-export function add_users(router: web.Router): void {
+export function add_users(router: jsonrpc.JsonRpcRouter): void {
     router.add_method("get_users", () => {
         const [res] = users_db.execute<User>("SELECT * FROM users;");
         return res;

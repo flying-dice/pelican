@@ -1,16 +1,16 @@
-import { web } from "pelican";
+import { jsonrpc } from "pelican";
 import { add_users } from "./users";
 
 PELICAN = {
     logger_level: "error",
 };
 
-const server = web.serve({
+const server = new jsonrpc.JsonRpcServer({
     port: 1234,
     host: "localhost",
 });
 
-const router = web.router();
+const router = new jsonrpc.JsonRpcRouter();
 
 add_users(router);
 router.add_method("ping", (props: { message: string }) => {

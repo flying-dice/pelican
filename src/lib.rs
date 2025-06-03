@@ -1,12 +1,11 @@
 pub mod json;
-mod json_rpc;
+mod jsonrpc;
 mod jsonschema;
 mod logger;
 mod module_config;
 mod requests;
 mod sqlite;
 pub mod uuid;
-mod web;
 
 use log::LevelFilter::Warn;
 use log::{error, info, LevelFilter};
@@ -43,7 +42,7 @@ pub fn pelican(lua: &Lua) -> LuaResult<LuaTable> {
     json::inject_module(lua, &exports)?;
     logger::inject_module(lua, &exports)?;
     uuid::inject_module(lua, &exports)?;
-    web::inject_module(lua, &exports)?;
+    jsonrpc::inject_module(lua, &exports)?;
     jsonschema::inject_module(lua, &exports)?;
     requests::inject_module(lua, &exports)?;
     sqlite::inject_module(lua, &exports)?;

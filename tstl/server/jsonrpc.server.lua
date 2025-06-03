@@ -8,12 +8,12 @@ local URIError = ____lualib.URIError
 local __TS__New = ____lualib.__TS__New
 local ____exports = {}
 local ____pelican = require("pelican")
-local web = ____pelican.web
+local jsonrpc = ____pelican.jsonrpc
 local ____users = require("server.users")
 local add_users = ____users.add_users
 PELICAN = {logger_level = "error"}
-local server = web.serve({port = 1234, host = "localhost"})
-local router = web.router()
+local server = jsonrpc.JsonRpcServer.new({port = 1234, host = "localhost"})
+local router = jsonrpc.JsonRpcRouter.new()
 add_users(nil, router)
 router:add_method(
     "ping",

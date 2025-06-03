@@ -2,7 +2,19 @@ import { describe, it, expect } from "vitest";
 import axios from "axios";
 import * as crypto from "node:crypto";
 
-describe("web", () => {
+describe("jsonrpc", () => {
+    describe("health", () => {
+        it("should return 200 OK", async () => {
+            const response = await axios.get("http://localhost:1234/health");
+            expect(response.status).toBe(200);
+            expect(response.data).toEqual({
+                name: "pelican",
+                version: "0.3.0",
+                status: "OK",
+            });
+        });
+    });
+
     describe("http", () => {
         const httpClient = axios.create({
             baseURL: "http://localhost:1234",
@@ -85,7 +97,9 @@ describe("web", () => {
         it("should handle invalid JSON-RPC request", async () => {
             const response = await httpClient.post("/rpc", "Invalid JSON");
             expect(response.status).toBe(400);
-            expect(response.data).toEqual("Failed to parse request");
+            expect(response.data).toEqual(
+                'Json deserialize error: invalid type: string "Invalid JSON", expected struct JsonRpcRequest at line 1 column 14',
+            );
         });
     });
 
