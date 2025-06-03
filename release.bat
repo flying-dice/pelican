@@ -12,7 +12,12 @@ if exist target (
 cargo build
 
 :: Run Tests
-lua5.1 ltests/index.lua
+cd tstl
+npm install
+npm run test
+npm run test:e2e
+
+cd ..
 
 :: Run Release
 cargo release --execute --no-publish
