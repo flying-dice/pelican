@@ -1,39 +1,33 @@
 -- %USERPROFILE%\Saved Games\DCS\Scripts\Hooks\PelicanTestGameGUI.lua
 
 package.cpath = package.cpath .. ";" .. lfs.writedir() .. "\\Mods\\tech\\Pelican\\bin\\?.dll"
+PELICAN = { logger_level = "debug" }
 
 local status, ____pelican = pcall(require, "pelican")
 if not status then
     log.write("PELICAN", log.ERROR, "Failed to load Pelican: " .. tostring(____pelican))
     return
+else
+    log.write("PELICAN", log.INFO, "Pelican loaded successfully")
 end
 
-local name = ____pelican.name
-local version = ____pelican.version
-local web = ____pelican.web
 local logger = ____pelican.logger
 
-logger.info("Pelican Running...")
+local my_logger = logger.Logger.new("PELICAN.GUI")
 
-log.write("PELICAN", log.INFO, "Pelican Running...")
-log.write("PELICAN", log.INFO, "Pelican Name: " .. name)
-log.write("PELICAN", log.INFO, "Pelican Version: " .. version)
+my_logger:info("Pelican Running...")
 
-local server = web.serve(
-        {
-            host = "127.0.0.1",
-            port = 1234
-        }
-)
+local jsonrpc = ____pelican.jsonrpc
 
-local router = web.router()
+local server = jsonrpc.JsonRpcServer.new({ host = "127.0.0.1", port = 1234 })
+local router = jsonrpc.JsonRpcRouter.new()
 
 router:add_method(
-        "ping",
-        function(params)
-            local param = params[1]
-            return { message = "pong " .. param }
-        end
+    "ping",
+    function(params)
+        local param = params[1]
+        return { message = "pong " .. param }
+    end
 )
 
 local user_callbacks = {}
@@ -45,4 +39,5 @@ function user_callbacks.onSimulationFrame()
     end
 end
 
+log.write("PELICAN", log.INFO, "Scheduling user callbacks for simulation frame processing...")
 DCS.setUserCallbacks(user_callbacks)
