@@ -64,6 +64,8 @@ pub struct JsonRpcServer {
     app_data: Data<Mutex<AppData>>,
 }
 
+const TIMEOUT_SECONDS = 30;
+
 impl JsonRpcServer {
     fn new(config: ServerConfig) -> Result<Self, actix_web::Error> {
         let app_data = Data::new(Mutex::new(AppData::default()));
@@ -212,9 +214,9 @@ async fn post_rpc(
         return Ok(HttpResponse::Accepted().body("OK"));
     };
 
-    let result = timeout(Duration::from_secs(5), receiver)
+    let result = timeout(Duration::from_secs(TIMEOUT_SECONDS), receiver)
         .await
-        .map_err(ErrorInternalServerError)?;
+        .map_err(ErrorInternalServerError(format!("Timed out max: {} seconds", TIMEOUT_SECONDS)))?;
 
     let response = result.map_err(ErrorInternalServerError)?;
 
@@ -405,7 +407,7 @@ async fn notify_session(
     mut session: Session,
     receiver: Receiver<JsonRpcResponse>,
 ) -> Result<(), String> {
-    let response = timeout(Duration::from_secs(5), receiver)
+    let response = timeout(Duration::from_secs(TIMEOUT_SECONDS), receiver)
         .await
         .map_err(|e| format!("ERR: TIMEOUT: {:?}", e))?
         .map_err(|e| format!("ERR: FAILED RES: {:?}", e))?;
