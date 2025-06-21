@@ -31,7 +31,7 @@ describe("users", () => {
         expect(response.data).toEqual({
             jsonrpc: "2.0",
             id: rpcRequest.id,
-            result: {},
+            result: [],
         });
 
         await httpClient.post("/rpc", {

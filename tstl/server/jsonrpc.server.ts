@@ -1,4 +1,4 @@
-import { jsonrpc } from "pelican";
+import { jsonrpc, json } from "pelican";
 import { add_users } from "./users";
 
 PELICAN = {
@@ -15,6 +15,13 @@ const router = new jsonrpc.JsonRpcRouter();
 add_users(router);
 router.add_method("ping", (props: { message: string }) => {
     return `Pong, ${props.message}!`;
+});
+
+router.add_method("use_safe_encode", () => {
+    return {
+        message: "This is a safe encoded message.",
+        function: function () {}, // This will be serialized as 'function'
+    };
 });
 
 router.add_method("throws", () => {
