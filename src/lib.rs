@@ -2,6 +2,7 @@ pub mod json;
 mod jsonrpc;
 mod jsonschema;
 mod logger;
+mod lua_utils;
 mod module_config;
 mod requests;
 mod sqlite;

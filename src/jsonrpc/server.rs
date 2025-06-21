@@ -8,6 +8,7 @@ use crate::jsonrpc::{
     JsonRpcError, JsonRpcRequest, JsonRpcResponse, JSON_RPC_INTERNAL_ERROR,
     JSON_RPC_METHOD_NOT_FOUND, JSON_RPC_VERSION,
 };
+use crate::lua_utils::serialize_lua_to_json;
 use actix_web::{get, middleware, post, App, HttpRequest, HttpResponse, HttpServer};
 use log::{debug, error, info, warn};
 use mlua::prelude::{LuaError, LuaNil, LuaValue};
@@ -331,7 +332,7 @@ fn process_request(
                 let response = JsonRpcResponse {
                     jsonrpc: JSON_RPC_VERSION.to_string(),
                     id,
-                    result: Some(serde_json::to_value(result).map_err(LuaError::external)?),
+                    result: serialize_lua_to_json(&result),
                     error: None,
                 };
                 Ok(Some(response))

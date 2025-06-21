@@ -101,6 +101,26 @@ describe("jsonrpc", () => {
                 'Json deserialize error: invalid type: string "Invalid JSON", expected struct JsonRpcRequest at line 1 column 14',
             );
         });
+
+        it("should handle safe encoding", async () => {
+            const rpcRequest = {
+                jsonrpc: "2.0",
+                method: "use_safe_encode",
+                params: [],
+                id: crypto.randomUUID(),
+            };
+
+            const response = await httpClient.post("/rpc", rpcRequest);
+            expect(response.status).toBe(200);
+            expect(response.data).toEqual({
+                jsonrpc: "2.0",
+                id: rpcRequest.id,
+                result: {
+                    message: "This is a safe encoded message.",
+                    function: "function",
+                },
+            });
+        });
     });
 
     describe("websocket", () => {

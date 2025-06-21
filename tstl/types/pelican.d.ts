@@ -22,6 +22,8 @@ declare module "pelican" {
     declare namespace json {
         declare function encode<T = any>(value: T): LuaMultiReturn<[string, string | undefined]>;
 
+        declare function safe_encode<T = any>(value: T): LuaMultiReturn<[string, string | undefined]>;
+
         declare function decode<T = any>(json: string): LuaMultiReturn<[T, string | undefined]>;
     }
 

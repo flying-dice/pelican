@@ -66,4 +66,77 @@ describe("json", () => {
         expect.equal(luaTable, undefined);
         expect.equal(err, "EOF while parsing an object at line 1 column 44");
     });
+
+    describe("safe_encode", () => {
+        it("should safe encode a string", () => {
+            const luaString = "Hello World";
+            const [jsonString, err] = json.safe_encode(luaString);
+            expect.equal(type(jsonString), "string");
+            expect.equal(jsonString, '"Hello World"');
+        });
+
+        it("should safe encode a number", () => {
+            const luaNumber = 42;
+            const [jsonString, err] = json.safe_encode(luaNumber);
+            expect.equal(type(jsonString), "string");
+            expect.equal(jsonString, "42");
+        });
+
+        it("should safe encode a boolean", () => {
+            const luaBoolean = true;
+            const [jsonString, err] = json.safe_encode(luaBoolean);
+            expect.equal(type(jsonString), "string");
+            expect.equal(jsonString, "true");
+        });
+
+        it("should safe encode a nil value", () => {
+            const luaNil = null; // Lua nil is represented as null in JSON
+            const [jsonString, err] = json.safe_encode(luaNil);
+            expect.equal(type(jsonString), "string");
+            expect.equal(jsonString, "null");
+        });
+
+        it("should safe encode an array with all strings", () => {
+            const luaArray = ["a", "b", "c", "d", "e"];
+            const [jsonString, err] = json.safe_encode(luaArray);
+            expect.equal(type(jsonString), "string");
+            expect.equal(jsonString, '["a","b","c","d","e"]');
+        });
+
+        it("should safe encode an array with mixed types", () => {
+            const luaArray = ["a", 1, true];
+            const [jsonString, err] = json.safe_encode(luaArray);
+            expect.equal(type(jsonString), "string");
+            expect.equal(jsonString, '["a",1,true]');
+        });
+
+        it("should safe encode a table with a function", () => {
+            const luaTable = {
+                name: "John",
+                greet: function () {
+                    return "Hello, " + this.name;
+                },
+            };
+            const [jsonString, err] = json.safe_encode(luaTable);
+
+            print(err);
+
+            expect.equal(type(jsonString), "string");
+            expect.equal(jsonString, '{"greet":"function","name":"John"}');
+        });
+
+        it("should safe encode a table with a thread", () => {
+            const coro = coroutine.create(() => {});
+            const luaTable = {
+                name: "John",
+                coro,
+            };
+            const [jsonString, err] = json.safe_encode(luaTable);
+
+            print(err);
+
+            expect.equal(type(jsonString), "string");
+            expect.equal(jsonString, '{"coro":"thread","name":"John"}');
+        });
+    });
 });

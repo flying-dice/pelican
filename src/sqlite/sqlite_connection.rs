@@ -1,3 +1,4 @@
+use crate::lua_utils::is_lua_array;
 use log::debug;
 use mlua::prelude::LuaError;
 use mlua::{
@@ -104,30 +105,6 @@ fn bind_params(statement: &mut Statement, params: LuaTable) -> mlua::Result<()> 
     } else {
         bind_named_params(statement, params)
     }
-}
-
-/**
- * Check if a Lua table is an array by checking if it has contiguous integer keys starting from 1.
- */
-fn is_lua_array(table: &LuaTable) -> mlua::Result<bool> {
-    let mut last_index = 0;
-
-    for pair in table.pairs::<LuaValue, LuaValue>() {
-        let (key, _) = pair?;
-
-        let index = match key {
-            LuaValue::Integer(i) if i > 0 => i,
-            _ => return Ok(false), // Non-integer or non-positive index
-        };
-
-        if index != last_index + 1 {
-            return Ok(false); // Not contiguous
-        }
-
-        last_index = index;
-    }
-
-    Ok(true)
 }
 
 /**

@@ -22,6 +22,16 @@ router:add_method(
     end
 )
 router:add_method(
+    "use_safe_encode",
+    function()
+        return {
+            message = "This is a safe encoded message.",
+            ["function"] = function(self)
+            end
+        }
+    end
+)
+router:add_method(
     "throws",
     function()
         error(
