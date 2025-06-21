@@ -125,6 +125,20 @@ describe("json", () => {
             expect.equal(jsonString, '{"greet":"function","name":"John"}');
         });
 
+        it("should safe encode a table with numeric keys", () => {
+            const luaTable = {
+                100: "one",
+                200: "two",
+                300: "three",
+            };
+            const [jsonString, err] = json.safe_encode(luaTable);
+
+            print(err);
+
+            expect.equal(type(jsonString), "string");
+            expect.equal(jsonString, '{"100":"one","200":"two","300":"three"}');
+        });
+
         it("should safe encode a table with a thread", () => {
             const coro = coroutine.create(() => {});
             const luaTable = {

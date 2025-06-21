@@ -210,6 +210,19 @@ describe(
                     end
                 )
                 it(
+                    "should safe encode a table with numeric keys",
+                    function()
+                        local luaTable = {[100] = "one", [200] = "two", [300] = "three"}
+                        local jsonString, err = json.safe_encode(luaTable)
+                        print(err)
+                        expect.equal(
+                            type(jsonString),
+                            "string"
+                        )
+                        expect.equal(jsonString, "{\"100\":\"one\",\"200\":\"two\",\"300\":\"three\"}")
+                    end
+                )
+                it(
                     "should safe encode a table with a thread",
                     function()
                         local coro = coroutine.create(function()

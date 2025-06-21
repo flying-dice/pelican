@@ -1,4 +1,4 @@
-use log::{info, warn};
+use log::{debug, warn};
 use mlua::prelude::{LuaTable, LuaValue};
 use serde_json::Value;
 
@@ -27,7 +27,7 @@ pub fn is_lua_array(table: &LuaTable) -> mlua::Result<bool> {
 }
 
 pub fn serialize_lua_to_json(lua_value: &LuaValue) -> Option<Value> {
-    info!("Serializing Lua value: {:?}", lua_value);
+    debug!("Serializing Lua value: {:?}", lua_value);
     match lua_value {
         LuaValue::Nil => Some(Value::Null),
         LuaValue::Boolean(b) => Some(Value::Bool(*b)),
@@ -51,11 +51,10 @@ fn serialize_lua_table_to_json(table: &LuaTable) -> Option<Value> {
     for pair in table.pairs::<LuaValue, LuaValue>() {
         match pair {
             Ok((key, value)) => {
-                if let Some(key_str) = key.as_string() {
-                    info!("Serializing Lua table key: {:?}", key_str);
-                    // TODO: figure out how to handle non-string keys
+                if let Ok(key_str) = key.to_string() {
+                    debug!("Serializing Lua table key: {:?}", key_str);
                     if let Some(value_json) = serialize_lua_to_json(&value) {
-                        map.insert(key_str.to_string_lossy(), value_json);
+                        map.insert(key_str, value_json);
                     }
                 }
             }
@@ -66,7 +65,7 @@ fn serialize_lua_table_to_json(table: &LuaTable) -> Option<Value> {
 }
 
 fn serialize_lua_array_to_json(table: &LuaTable) -> Option<Value> {
-    info!(
+    debug!(
         "Serializing Lua array: {:?} with {:?} elements",
         table,
         table.len()
@@ -75,7 +74,7 @@ fn serialize_lua_array_to_json(table: &LuaTable) -> Option<Value> {
     for pair in table.pairs::<LuaValue, LuaValue>() {
         match pair {
             Ok((_, value)) => {
-                info!("Serializing Lua array element: {:?}", value);
+                debug!("Serializing Lua array element: {:?}", value);
                 vec.push(serialize_lua_to_json(&value)?);
             }
             Err(_) => {
