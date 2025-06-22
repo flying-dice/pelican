@@ -28,6 +28,8 @@ use tokio::sync::oneshot::Receiver;
 use tokio::task::spawn_local;
 use tokio::time::timeout;
 
+const TIMEOUT: Duration = Duration::from_secs(300); // 5 minutes
+
 pub struct AppRequest {
     pub request: JsonRpcRequest,
     pub response_sender: Option<oneshot::Sender<JsonRpcResponse>>,
@@ -63,8 +65,6 @@ pub struct JsonRpcServer {
     handle: ServerHandle,
     app_data: Data<Mutex<AppData>>,
 }
-
-const TIMEOUT_SECONDS = 30;
 
 impl JsonRpcServer {
     fn new(config: ServerConfig) -> Result<Self, actix_web::Error> {
@@ -214,9 +214,9 @@ async fn post_rpc(
         return Ok(HttpResponse::Accepted().body("OK"));
     };
 
-    let result = timeout(Duration::from_secs(TIMEOUT_SECONDS), receiver)
+    let result = timeout(TIMEOUT, receiver)
         .await
-        .map_err(ErrorInternalServerError(format!("Timed out max: {} seconds", TIMEOUT_SECONDS)))?;
+        .map_err(|_| ErrorInternalServerError(format!("Timed out max: {:?} seconds", TIMEOUT)))?;
 
     let response = result.map_err(ErrorInternalServerError)?;
 
@@ -407,7 +407,7 @@ async fn notify_session(
     mut session: Session,
     receiver: Receiver<JsonRpcResponse>,
 ) -> Result<(), String> {
-    let response = timeout(Duration::from_secs(TIMEOUT_SECONDS), receiver)
+    let response = timeout(TIMEOUT, receiver)
         .await
         .map_err(|e| format!("ERR: TIMEOUT: {:?}", e))?
         .map_err(|e| format!("ERR: FAILED RES: {:?}", e))?;
