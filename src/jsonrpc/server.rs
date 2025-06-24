@@ -28,7 +28,7 @@ use tokio::sync::oneshot::Receiver;
 use tokio::task::spawn_local;
 use tokio::time::timeout;
 
-const TIMEOUT: Duration = Duration::from_secs(300); // 5 minutes
+const DEFAULT_TIMEOUT: Duration = Duration::from_secs(300); // 5 minutes
 
 pub struct AppRequest {
     pub request: JsonRpcRequest,
@@ -38,6 +38,7 @@ pub struct AppRequest {
 #[derive(Default)]
 pub struct AppData {
     pub rpc_queue: VecDeque<AppRequest>,
+    pub timeout: Duration,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -51,6 +52,7 @@ struct Health {
 struct ServerConfig {
     host: String,
     port: u16,
+    timeout: Option<u64>,
 }
 
 impl FromLua for ServerConfig {
@@ -66,9 +68,20 @@ pub struct JsonRpcServer {
     app_data: Data<Mutex<AppData>>,
 }
 
+impl AppData {
+    fn new(timeout: Duration) -> Self {
+        AppData {
+            rpc_queue: VecDeque::new(),
+            timeout,
+        }
+    }
+}
+
 impl JsonRpcServer {
     fn new(config: ServerConfig) -> Result<Self, actix_web::Error> {
-        let app_data = Data::new(Mutex::new(AppData::default()));
+        let app_data = Data::new(Mutex::new(AppData::new(get_timeout_duration_from_config(
+            &config,
+        ))));
         let app_data_2 = app_data.clone();
 
         let host = config.host.clone();
@@ -207,6 +220,7 @@ async fn post_rpc(
     let request = body.into_inner();
 
     let maybe_receiver = push_rpc_request(&mut data_guard, request);
+    let request_timeout = data_guard.timeout;
 
     drop(data_guard);
 
@@ -214,9 +228,9 @@ async fn post_rpc(
         return Ok(HttpResponse::Accepted().body("OK"));
     };
 
-    let result = timeout(TIMEOUT, receiver)
-        .await
-        .map_err(|_| ErrorInternalServerError(format!("Timed out max: {:?} seconds", TIMEOUT)))?;
+    let result = timeout(request_timeout, receiver).await.map_err(|_| {
+        ErrorInternalServerError(format!("Timed out max: {:?} seconds", request_timeout))
+    })?;
 
     let response = result.map_err(ErrorInternalServerError)?;
 
@@ -251,10 +265,11 @@ async fn get_ws(
                     };
 
                     let maybe_receiver = push_rpc_request(&mut data_guard, request);
+                    let request_timeout = data_guard.timeout;
                     drop(data_guard);
 
                     if let Some(receiver) = maybe_receiver {
-                        notify_session(session.clone(), receiver)
+                        notify_session(session.clone(), receiver, request_timeout)
                             .await
                             .unwrap_or_else(|e| error!("{}", e))
                     }
@@ -406,8 +421,9 @@ fn push_rpc_request(
 async fn notify_session(
     mut session: Session,
     receiver: Receiver<JsonRpcResponse>,
+    timeout_duration: Duration,
 ) -> Result<(), String> {
-    let response = timeout(TIMEOUT, receiver)
+    let response = timeout(timeout_duration, receiver)
         .await
         .map_err(|e| format!("ERR: TIMEOUT: {:?}", e))?
         .map_err(|e| format!("ERR: FAILED RES: {:?}", e))?;
@@ -421,4 +437,18 @@ async fn notify_session(
         .map_err(|e| format!("ERR: RESP SERDE FAILED: {:?}", e))?;
 
     Ok(())
+}
+
+fn get_timeout_duration_from_config(config: &ServerConfig) -> Duration {
+    match config.timeout {
+        Some(configured_timeout) => {
+            if configured_timeout == 0 {
+                warn!("Timeout is set to 0, using infinite timeout, this is NOT recommended.");
+                Duration::from_secs(u64::MAX)
+            } else {
+                Duration::from_secs(configured_timeout)
+            }
+        }
+        None => DEFAULT_TIMEOUT,
+    }
 }
