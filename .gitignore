@@ -7,3 +7,4 @@ pelican.log
 node_modules
 pelican.db
 *.db
+/docs
