@@ -1570,7 +1570,7 @@ dependencies = [
 
 [[package]]
 name = "pelican"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "actix-web",
  "actix-ws",
