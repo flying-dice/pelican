@@ -206,8 +206,14 @@ declare module "pelican" {
      */
     declare namespace jsonrpc {
         declare type JsonRpcServerOptions = {
+            /** The port to bind the server to. */
             port: number;
+
+            /** The host to bind the server to. */
             host: string;
+
+            /** Optionally configure a timeout for the server. */
+            timeout?: number;
         };
 
         /** @customConstructor jsonrpc.JsonRpcServer.new */
