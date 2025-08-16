@@ -3,7 +3,7 @@
 This project provides a fully functional JSON-RPC server implemented in Rust with integration to Lua.
 It supports both HTTP and WebSocket endpoints for receiving and responding to JSON-RPC requests.
 
-See https://flying-dice.github.io/pelican/ for more information.
+See https://pelican-48d.pages.dev/ for more information.
 
 ## Testing
 
