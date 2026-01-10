@@ -5,6 +5,8 @@ It supports both HTTP and WebSocket endpoints for receiving and responding to JS
 
 See https://pelican-48d.pages.dev/ for more information.
 
+![image](IMG_9222.png)
+
 ## Testing
 
 The project includes a comprehensive test suite to ensure the functionality of the JSON-RPC server and Lua integration.
