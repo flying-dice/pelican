@@ -4,7 +4,7 @@ version = "0.0.7"
 edition = "2021"
 
 [dependencies]
-mlua = { version = "0.10", features = ["lua51", "module", "async", "serialize", "macros"] }
+mlua = { version = "0.12", features = ["lua51", "module", "async", "serialize", "macros"] }
 tokio = { version = "1.43.0", features = ["full"] }
 actix-web = "4.9.0"
 actix-ws = "0.3.0"
